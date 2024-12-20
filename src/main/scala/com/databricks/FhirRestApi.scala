@@ -30,6 +30,9 @@ trait FhirService {
   val logger: LoggingAdapter
 
   val qw = QueryWriter("hls_healthcare", "hls_dev")
+
+  val qr = new QueryRunner()
+
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat (
@@ -43,7 +46,15 @@ trait FhirService {
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
-                  complete{ qw.read(typeSeg, idSeg, (uri.query().toMap)) }
+                  //complete{ qw.read(typeSeg, idSeg, (uri.query().toMap)) }
+                  
+                  val query = qw.read(typeSeg, idSeg, uri.query().toMap)
+                  val queryInput = QueryInput(query, "user123")
+                  // Use QueryRunner to run the constructed query
+                  val output = qr.runQuery(queryInput)
+                  // Complete with results from QueryRunner
+                  complete(output.queryResults.mkString(", "))
+                  
                 }
               }
             }
