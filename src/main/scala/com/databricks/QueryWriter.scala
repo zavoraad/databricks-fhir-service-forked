@@ -45,6 +45,7 @@ class QueryWriter(catalog: String, schema: String){
   def read(resource: String, id: String, params: Map[String, String]): String = {
     "SELECT " + QueryWriter.paramsToSelect(params) +
     " FROM " + catalog + "." + schema + "." +resource +
-    " WHERE id = " + id + "\n"
+    //" WHERE id = " + id + "\n"
+    " WHERE bundleUUID = '" + id.trim() + "'\n"
   }
 }
