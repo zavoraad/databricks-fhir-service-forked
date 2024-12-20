@@ -24,6 +24,7 @@ libraryDependencies ++= {
 
   Seq(
     "com.databricks"    % "databricks-jdbc" % "2.6.40",
+    "joda-time"         % "joda-time"       % "2.12.7",
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
@@ -37,6 +38,11 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
   ).map(_.cross(CrossVersion.for3Use2_13))
 }
+
+javaOptions += "--add-opens"
+javaOptions += "java.base/java.nio=ALL-UNNAMED"
+
+fork in run := true
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension
