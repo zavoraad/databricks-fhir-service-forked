@@ -5,7 +5,7 @@ package com.databricks.industry.solutions.fhirapi
    https://www.hl7.org/fhir/http.html#summary
  
  */
-object QueryWriter{
+object QueryInterpreter{
 
   /*
    *

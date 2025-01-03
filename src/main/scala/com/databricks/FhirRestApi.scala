@@ -29,7 +29,7 @@ trait FhirService {
   def config: Config
   val logger: LoggingAdapter
 
-  val qw = QueryWriter("hls_healthcare", "hls_dev")
+  val qw = QueryInterpreter("hls_healthcare", "hls_dev")
 
   val qr = new QueryRunner()
 
