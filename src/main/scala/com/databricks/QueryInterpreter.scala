@@ -39,11 +39,11 @@ object QueryInterpreter{
 }
 
 
-class QueryWriter(catalog: String, schema: String){
+class QueryInterpreter(catalog: String, schema: String){
 
   //GET [base]/[type]/[id] {?_format=[mime-type]}
   def read(resource: String, id: String, params: Map[String, String]): String = {
-    "SELECT " + QueryWriter.paramsToSelect(params) +
+    "SELECT " + QueryInterpreter.paramsToSelect(params) +
     " FROM " + catalog + "." + schema + "." +resource +
     //" WHERE id = " + id + "\n"
     " WHERE bundleUUID = '" + id.trim() + "'\n"

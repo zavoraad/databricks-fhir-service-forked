@@ -29,9 +29,8 @@ trait FhirService {
   def config: Config
   val logger: LoggingAdapter
 
-  val qw = QueryInterpreter("hls_healthcare", "hls_dev")
-
-  val qr = new QueryRunner()
+  //TODO pass this elsewhere
+  val service = ServiceManager(QueryInterpreter("hls_healthcare", "hls_dev"), QueryRunner(TokenAuth("jdbc:databricks://e2-demo-field-eng.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/862f1d757f0424f7", "")))
 
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
@@ -46,14 +45,15 @@ trait FhirService {
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
+                  complete{"TODO"}
                   //complete{ qw.read(typeSeg, idSeg, (uri.query().toMap)) }
                   
-                  val query = qw.read(typeSeg, idSeg, uri.query().toMap)
-                  val queryInput = QueryInput(query, "user123")
+                  //val query = qw.read(typeSeg, idSeg, uri.query().toMap)
+                  //val queryInput = QueryInput(query)
                   // Use QueryRunner to run the constructed query
-                  val output = qr.runQuery(queryInput)
+                  //val output = qr.runQuery(queryInput)
                   // Complete with results from QueryRunner
-                  complete(output.queryResults.mkString(", "))
+                  //complete(output.queryResults.mkString(", "))
                   
                 }
               }

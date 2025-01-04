@@ -1,5 +1,12 @@
-class ServiceManager({
+package com.databricks.industry.solutions.fhirapi
 
+class ServiceManager(qi: QueryInterpreter, qr: QueryRunner){
+  /*
+   * 
+   */
+  def read(typeSeg: String, idSeg: String, uri: params: Map[String, String]) : String = {
+    qr.runQuery(QueryInput(qi.read(typeSeg, idSeg, uri)))
+  }
 }
 
 object ServiceManager{
