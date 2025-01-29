@@ -11,8 +11,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.Decoder.Result
 import io.circe.{Decoder, Encoder, HCursor, Json}
@@ -26,12 +25,12 @@ trait FhirService {
   implicit val system: ActorSystem
   implicit def executor: ExecutionContext
 
-  def config: Config
+  val config = ConfigFactory.load()
   val logger: LoggingAdapter
 
   val service = {
     ServiceManager(
-      QueryInterpreter("databricks.catalog", "databricks.schema"),
+      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
       QueryRunner(
         TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
       ))
@@ -45,21 +44,19 @@ trait FhirService {
             complete { "TODO test" }
           }
         },
+        path("config"){
+          get {
+            complete {config.toString} 
+          }
+        },
         pathPrefix("fhir") {
           pathPrefix(Segment){ typeSeg =>
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
-                  complete{"TODO"}
-                  //complete{ qw.read(typeSeg, idSeg, (uri.query().toMap)) }
-                  
-                  //val query = qw.read(typeSeg, idSeg, uri.query().toMap)
-                  //val queryInput = QueryInput(query)
-                  // Use QueryRunner to run the constructed query
-                  //val output = qr.runQuery(queryInput)
-                  // Complete with results from QueryRunner
-                  //complete(output.queryResults.mkString(", "))
-                  
+                  //complete{"TODO"}
+                  //complete{ service.read(typeSeg, idSeg, (uri.query().toMap)) }
+                  complete {"TODO"}
                 }
               }
             }
