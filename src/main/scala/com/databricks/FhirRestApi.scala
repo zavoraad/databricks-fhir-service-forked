@@ -29,8 +29,13 @@ trait FhirService {
   def config: Config
   val logger: LoggingAdapter
 
-  //TODO pass this elsewhere
-  val service = ServiceManager(QueryInterpreter("hls_healthcare", "hls_dev"), QueryRunner(TokenAuth("jdbc:databricks://e2-demo-field-eng.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/862f1d757f0424f7", "")))
+  val service = {
+    ServiceManager(
+      QueryInterpreter("databricks.catalog", "databricks.schema"),
+      QueryRunner(
+        TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
+      ))
+  }
 
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
