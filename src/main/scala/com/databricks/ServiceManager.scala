@@ -1,6 +1,6 @@
 package com.databricks.industry.solutions.fhirapi
 
-class ServiceManager(qi: QueryInterpreter, qr: QueryRunner){
+class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner){
   /*
    * 
    */

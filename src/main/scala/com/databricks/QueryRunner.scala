@@ -17,7 +17,7 @@ case class QueryInput(query: String)
 
 // QueryOutput case class
 //Runtime in milliseconds
-case class QueryOutput(queryResults: List[Map[String, String]], queryRuntime: Long, queryStartTime: DateTime, error: Option[String]){
+case class QueryOutput(queryResults: List[Map[String, String]], queryRuntime: Long, queryStartTime: DateTime, error: Option[List[String]]){
   override def toString : String = {
     "queryRuntime (in ms): " + queryRuntime +
     "\nqueryStartTime: " + queryStartTime +
