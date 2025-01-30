@@ -17,7 +17,7 @@ case class QueryInput(query: String)
 
 // QueryOutput case class
 //Runtime in milliseconds
-case class QueryOutput(queryResults: List[Map[String, String]], queryRuntime: Long, queryStartTime: DateTime, error: Option[List[String]]){
+case class QueryOutput(queryResults: List[Map[String, String]], queryRuntime: Long, queryStartTime: DateTime, error: Option[String]){
   override def toString : String = {
     "queryRuntime (in ms): " + queryRuntime +
     "\nqueryStartTime: " + queryStartTime +
@@ -70,7 +70,7 @@ class QueryRunner (auth: Auth){
 
       } catch {
         case e: Exception =>
-          QueryOutput(List[Map[String, String]](), System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, Some(e.getStackTrace.toList.map(_.toString)))
+          QueryOutput(List[Map[String, String]](), System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, Some(e.toString))
       }
     }
   }
