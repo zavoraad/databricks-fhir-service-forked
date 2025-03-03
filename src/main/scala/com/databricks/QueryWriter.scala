@@ -5,6 +5,7 @@ package com.databricks.industry.solutions.fhirapi
    https://www.hl7.org/fhir/http.html#summary
  
  */
+// Object (Static Helper)
 object QueryWriter{
 
   /*
@@ -38,14 +39,12 @@ object QueryWriter{
   }
 }
 
-
+//  Class (Dynamic SQL Generator)
 class QueryWriter(catalog: String, schema: String){
 
-  //GET [base]/[type]/[id] {?_format=[mime-type]}
   def read(resource: String, id: String, params: Map[String, String]): String = {
     "SELECT " + QueryWriter.paramsToSelect(params) +
-    " FROM " + catalog + "." + schema + "." +resource +
-    //" WHERE id = " + id + "\n"
+    " FROM " + catalog + "." + schema + "." + resource +
     " WHERE bundleUUID = '" + id.trim() + "'\n"
   }
 }
