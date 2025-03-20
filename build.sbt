@@ -8,7 +8,6 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 name := "databricks-fhir-service"
 version := "0.0.1"
 
-lazy val sparkVersion = sys.env.getOrElse("SPARK_VERSION", "3.5.1")
 ThisBuild / organization := "com.databricks.industry.solutions"
 ThisBuild / organizationName := "Databricks, Inc."
 ThisBuild / resolvers += "Akka library repository".at("https://repo.akka.io/maven")
@@ -23,7 +22,7 @@ libraryDependencies ++= {
   val akkaHttpCirceV = "1.39.2"
 
   Seq(
-    "com.databricks"    % "databricks-jdbc" % "2.6.40",
+    "com.databricks"    % "databricks-jdbc" % "2.7.1",
     "joda-time"         % "joda-time"       % "2.12.7",
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
