@@ -32,7 +32,7 @@ trait FhirService {
     ServiceManager(
       QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
       QueryRunner(
-        TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
+        SimpleDS(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
       ))
   }
 

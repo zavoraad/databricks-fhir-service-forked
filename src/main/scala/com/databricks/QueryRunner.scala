@@ -39,39 +39,65 @@ class TokenAuth(val jdbcURL: String, private val token: String) extends Auth {
   }
 }
 
-class QueryRunner (auth: Auth){
+trait DataStore{
+  val auth: Auth
+  val conRetries: Int
+  val queryRetries: Int
 
-  //TODO Change this to connection pooling
-  lazy val con = auth.connect
+  def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
+    try{
+      val statement = con.createStatement
+      val resultSet = statement.executeQuery(query)
+      val it = new Iterator[Map[String, String]] {
+        def hasNext: Boolean = resultSet.next() // Check if there are more rows
+        def next(): Map[String, String] = {
+          (1 to resultSet.getMetaData.getColumnCount).map{ i =>
+            resultSet.getMetaData.getColumnName(i) -> resultSet.getString(i)
+          }.toMap
+        }
+      }
+      (it.toList, None)
+    }catch{
+      case r if retries > 0 => execute(query, retries-1, con)
+      case e: Exception =>
+        (List[Map[String, String]](), Some(e.toString))
+    }
+  }
+
+  protected def connect: Connection //internal class connection handling
+  def getConnection: Connection //function to interface with 
+
+  def executePaged(query: String, retries: Int): Unit = {} //todo return iterator for paging
+      
+}
+
+/*
+ * One connection reused everywhere
+ */
+class SimpleDS(val auth: Auth, val conRetries: Int = 1, val queryRetries: Int = 1) extends DataStore{
+  override def getConnection: Connection = con
+  lazy val con = connect
+
+  override def connect: Connection = {
+    def getCon(retries:Int): Connection = {
+      try{
+        auth.connect
+      } catch{
+        case r if retries > 0 => getCon(retries -1)
+        case t: Exception => throw t
+      }
+    }
+    getCon(conRetries)
+  }
+}
+
+class QueryRunner (ds: DataStore, queryRetries: Int = 1){
 
   // method to run the query
   def runQuery(queryInput: QueryInput): QueryOutput = {
     val queryStartTime = DateTime.now
+    val r = ds.execute(queryInput.query, queryRetries,ds.getConnection) //returns a tuple of data (Map[String,String], Option(String))
+    QueryOutput(r(0), System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, r(1))
 
-    return {
-      try {
-        // Execute the query
-        val statement = con.createStatement
-        val resultSet = statement.executeQuery(queryInput.query)
-
-        // Create an Iterator from the ResultSet
-        val iterator = new Iterator[Map[String, String]] {
-          def hasNext: Boolean = resultSet.next() // Check if there are more rows
-          def next(): Map[String, String] = {
-            (1 to resultSet.getMetaData.getColumnCount).map{ i =>
-              resultSet.getMetaData.getColumnName(i) -> resultSet.getString(i)
-            }.toMap
-          }
-        }
-
-        // Collect results into a list using the iterator and map function
-        // Calculate runtime in milliseconds
-        QueryOutput(iterator.toList, System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, None)
-
-      } catch {
-        case e: Exception =>
-          QueryOutput(List[Map[String, String]](), System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, Some(e.toString))
-      }
-    }
   }
 }
