@@ -45,7 +45,7 @@ class QueryInterpreter(catalog: String, schema: String){
   def read(resource: String, id: String, params: Map[String, String]): String = {
     "SELECT " + QueryInterpreter.paramsToSelect(params) +
     " FROM " + catalog + "." + schema + "." +resource +
-    //" WHERE id = " + id + "\n"
-    " WHERE bundleUUID = '" + id.trim() + "'\n"
+    " WHERE id = " + id + "\n"
+    //" WHERE bundleUUId = '" + id.trim() + "'\n"
   }
 }

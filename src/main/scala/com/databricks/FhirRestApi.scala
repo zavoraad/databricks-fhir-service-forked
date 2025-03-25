@@ -55,8 +55,8 @@ trait FhirService {
               get {
                 extractUri { uri =>
                   //complete{"TODO"}
-                  //complete{ service.read(typeSeg, idSeg, (uri.query().toMap)) }
-                  complete {"TODO"}
+                  complete{ service.read(typeSeg, idSeg, (uri.query().toMap)).toString }
+                  //complete {"TODO"}
                 }
               }
             }
