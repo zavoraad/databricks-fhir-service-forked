@@ -14,6 +14,9 @@ ThisBuild / resolvers += "Akka library repository".at("https://repo.akka.io/mave
 ThisBuild / scalaVersion := "3.4.2"
 
 
+//Enable docker build plugin
+enablePlugins(DockerPlugin)
+
 libraryDependencies ++= {
   val akkaHttpV      = "10.2.10"
   val akkaV          = "2.6.20"
