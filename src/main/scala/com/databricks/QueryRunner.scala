@@ -49,29 +49,54 @@ class QueryRunner {
 
   private def cleanJson(json: String): String = {
     try {
-      val parsedJson: JsonNode = objectMapper.readTree(json)
-      if (parsedJson.has("extension") && parsedJson.get("extension").isArray) {
-        val extArray = parsedJson.get("extension")
-        val fixedExtensions: ArrayNode = objectMapper.createArrayNode()
-        for (ext <- extArray.elements().asScala) {
-          if (ext.isTextual) {
-            try fixedExtensions.add(objectMapper.readTree(ext.asText()))
-            catch { case _: Exception => fixedExtensions.add(ext) }
-          } else if (ext.isObject) {
-            fixedExtensions.add(ext)
+      val root = objectMapper.readTree(json)
+
+      def cleanExtensions(node: JsonNode): Unit = {
+        if (node.isObject) {
+          val objNode = node.asInstanceOf[ObjectNode]
+          val fields = objNode.fieldNames().asScala.toList
+
+          fields.foreach { field =>
+            val child = objNode.get(field)
+
+            // If it's an array named "extension", attempt to clean it
+            if (field == "extension" && child.isArray) {
+              val cleanedArray = objectMapper.createArrayNode()
+              for (elem <- child.elements().asScala) {
+                if (elem.isTextual) {
+                  try {
+                    val parsed = objectMapper.readTree(elem.asText())
+                    cleanedArray.add(parsed)
+                  } catch {
+                    case _: Exception => cleanedArray.add(elem)
+                  }
+                } else {
+                  cleanedArray.add(elem)
+                }
+              }
+              objNode.set("extension", cleanedArray)
+            } else {
+              // Recurse into nested objects and arrays
+              if (child.isObject || child.isArray) {
+                cleanExtensions(child)
+              }
+            }
           }
+        } else if (node.isArray) {
+          node.elements().asScala.foreach(cleanExtensions)
         }
-        val objNode = parsedJson.deepCopy[ObjectNode]()
-        objNode.set("extension", fixedExtensions)
-        return objectMapper.writeValueAsString(objNode)
       }
-      objectMapper.writeValueAsString(parsedJson)
+
+      cleanExtensions(root)
+
+      objectMapper.writeValueAsString(root)
     } catch {
       case e: Exception =>
-        println(s"Failed to clean JSON: ${e.getMessage}")
+        println(s"Failed to deep-clean JSON: ${e.getMessage}")
         json
     }
   }
+
 
   private def addResourceType(json: String, resourceType: String): String = {
     try {
