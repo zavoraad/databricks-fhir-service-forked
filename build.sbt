@@ -57,4 +57,14 @@ libraryDependencies += "io.github.cdimascio" % "dotenv-java" % "3.0.0"
 
 // SLF4J for logging
 libraryDependencies += "org.slf4j" % "slf4j-api" % "2.0.9"
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.11" // (Optional, for logging)
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.11" 
+
+
+// Add HAPI FHIR (FHIR R4)
+libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-base" % "6.6.0"
+libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-structures-r4" % "6.6.0"
+
+// JSON Handling
+libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.0"
+
+libraryDependencies += "com.google.code.gson" % "gson" % "2.10.1"
