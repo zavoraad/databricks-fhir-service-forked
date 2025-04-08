@@ -10,7 +10,7 @@ project/plugins/project/
 
 
 # Ignore SBT build artifacts
-project/target/
+project/target/*
 project/streams/
 project/boot/
 
@@ -18,6 +18,8 @@ project/boot/
 .vscode/
 .bloop/
 .metals/
+metals.sbt
+sbt.json
 .history
 .cache
 
@@ -30,3 +32,14 @@ inputs/
 
 # Ignore compiled class files
 *.class
+
+# Additional entries based on your changes
+input_dsp/
+output_dsp/
+out/
+inputs/
+export/
+
+.env
+
+.bsp/
