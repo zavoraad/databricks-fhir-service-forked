@@ -10,11 +10,13 @@ from pyspark.sql.types import *
 import uuid
 from dbignite.readers import read_from_directory
 
+
+#Read in data in a direcotry in r4 for ndjson format
 sample_data = "s3://hls-eng-data-public/data/synthea/fhir/fhir/*json"
 
 #Read data from a static directory and parse it using entry() function
-bundle = read_from_directory(sample_data)
-df = bundle.entry(schemas =  FhirSchemaModel(schema_version="r4"))
+bundle = read_from_directory(sample_data, FhirFormat.NDJSON)
+df = bundle.entry(schemas =  FhirSchemaModel(schema_version="r4").custom_fhir_resource_mapping(['Patient', 'Claim', 'Condition']))
 
 # COMMAND ----------
 
@@ -22,6 +24,7 @@ df.select(explode("Patient").alias("Patient")).select("Patient.*").show()
 
 # COMMAND ----------
 
+#save this data out to a series of tables
 # DBTITLE 1,Build Custom Writer
 from multiprocessing.pool import ThreadPool
 import multiprocessing as mp
@@ -35,7 +38,6 @@ def bulk_table_write(entry,
   pool = ThreadPool(mp.cpu_count()-1)
   list(pool.map(lambda column: table_write(entry, str(column), location, write_mode), ([c for c in entry.columns if c not in ["id", "timestamp", "bundleUUID"]] if columns is None else columns)))
 
-
 # COMMAND ----------
 
 # MAGIC %sql 
@@ -47,6 +49,8 @@ def bulk_table_write(entry,
 # DBTITLE 1,Save to Table
 df.cache()
 bulk_table_write(df, location='hls_healthcare.databricks_fhir_service_forked')
+#save all data to tables
+
 
 # COMMAND ----------
 
