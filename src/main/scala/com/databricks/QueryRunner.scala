@@ -2,8 +2,8 @@ package com.databricks.industry.solutions.fhirapi
 
 import ca.uhn.fhir.context.FhirContext
 import java.sql.{Connection, ResultSet}
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
-import com.fasterxml.jackson.databind.node.{ObjectNode, ArrayNode}
+import com.fasterxml.jackson.databind.{ObjectMapper}
+import com.fasterxml.jackson.databind.node.ObjectNode
 import scala.jdk.CollectionConverters._
 
 case class QueryInput(query: String, oboUser: String, userToken: String)
@@ -31,8 +31,7 @@ class QueryRunner {
 
       while (resultSet.next()) {
         val rawJson = resultSet.getString("Patient_JSON")
-        val cleanedJson = cleanJson(rawJson)
-        val enrichedJson = addResourceType(cleanedJson, "Patient")
+        val enrichedJson = addResourceType(rawJson, "Patient")
         resultsList += s"""{ "resource": $enrichedJson }"""
       }
     } catch {
@@ -46,57 +45,6 @@ class QueryRunner {
 
     resultsList.toList
   }
-
-  private def cleanJson(json: String): String = {
-    try {
-      val root = objectMapper.readTree(json)
-
-      def cleanExtensions(node: JsonNode): Unit = {
-        if (node.isObject) {
-          val objNode = node.asInstanceOf[ObjectNode]
-          val fields = objNode.fieldNames().asScala.toList
-
-          fields.foreach { field =>
-            val child = objNode.get(field)
-
-            // If it's an array named "extension", attempt to clean it
-            if (field == "extension" && child.isArray) {
-              val cleanedArray = objectMapper.createArrayNode()
-              for (elem <- child.elements().asScala) {
-                if (elem.isTextual) {
-                  try {
-                    val parsed = objectMapper.readTree(elem.asText())
-                    cleanedArray.add(parsed)
-                  } catch {
-                    case _: Exception => cleanedArray.add(elem)
-                  }
-                } else {
-                  cleanedArray.add(elem)
-                }
-              }
-              objNode.set("extension", cleanedArray)
-            } else {
-              // Recurse into nested objects and arrays
-              if (child.isObject || child.isArray) {
-                cleanExtensions(child)
-              }
-            }
-          }
-        } else if (node.isArray) {
-          node.elements().asScala.foreach(cleanExtensions)
-        }
-      }
-
-      cleanExtensions(root)
-
-      objectMapper.writeValueAsString(root)
-    } catch {
-      case e: Exception =>
-        println(s"Failed to deep-clean JSON: ${e.getMessage}")
-        json
-    }
-  }
-
 
   private def addResourceType(json: String, resourceType: String): String = {
     try {

@@ -1,5 +1,6 @@
 package com.databricks.industry.solutions.fhirapi
 
+import akka.http.scaladsl.model.ContentTypes
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
@@ -31,6 +32,7 @@ trait FhirService {
         path("test") {
           get {
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
+
           }
         },
         path("test-db") {
