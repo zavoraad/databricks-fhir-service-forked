@@ -35,28 +35,29 @@ trait FhirService {
 
           }
         },
-        path("test-db") {
-          get {
-            val query = "SELECT * FROM hive_metastore.dbignite_demo_jdbc.patient LIMIT 5"
-            val queryInput = QueryInput(query, "admin", token)
-            val outputFuture: Future[QueryOutput] = Future(qr.runQuery(queryInput))
+        // path("test-db") {
+        //   get {
+        //     val query = "SELECT * FROM hive_metastore.dbignite_demo_jdbc.patient LIMIT 5"
+        //     val queryInput = QueryInput(query, "admin", token)
+        //     val outputFuture: Future[QueryOutput] = Future(qr.runQuery(queryInput))
 
-            onComplete(outputFuture) {
-              case Success(result: QueryOutput) =>
-                if (result.queryResults.isEmpty)
-                  complete(HttpResponse(StatusCodes.NotFound, entity = "No data found"))
-                else
-                  complete(HttpEntity(ContentTypes.`application/json`, result.queryResults.mkString(", ")))
-              case Failure(ex) =>
-                complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Error querying Databricks: ${ex.getMessage}"}"""))
-            }
-          }
-        },
+        //     onComplete(outputFuture) {
+        //       case Success(result: QueryOutput) =>
+        //         if (result.queryResults.isEmpty)
+        //           complete(HttpResponse(StatusCodes.NotFound, entity = "No data found"))
+        //         else
+        //           complete(HttpEntity(ContentTypes.`application/json`, result.queryResults.mkString(", ")))
+        //       case Failure(ex) =>
+        //         complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Error querying Databricks: ${ex.getMessage}"}"""))
+        //     }
+        //   }
+        // },
         pathPrefix("fhir") {
           path("Patient" / Segment) { resourceId =>
             get {
               val responseJson = sm.read("Patient", resourceId, Map.empty)
               complete(HttpEntity(ContentTypes.`application/json`, responseJson))
+
             }
           }
         }

@@ -1,10 +1,12 @@
 package com.databricks.industry.solutions.fhirapi
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.parser.IParser
 import io.github.cdimascio.dotenv.Dotenv
 
 class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
   private val fhirContext: FhirContext = FhirContext.forR4()
+  private val parser: IParser = fhirContext.newJsonParser().setPrettyPrint(true)
   private val dotenv = Dotenv.configure().ignoreIfMissing().load()
   private val token = dotenv.get("DATABRICKS_TOKEN")
 
@@ -14,22 +16,11 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
 
     val queryOutput = qr.runQuery(QueryInput(query, "user123", token))
 
-    if (queryOutput.queryResults.isEmpty) {
+    if (queryOutput.bundle.getEntry.isEmpty) {
       return """{ "error": "No matching patient found" }"""
     }
 
-    println(s"Returning JSON to Postman: ${queryOutput.queryResults.mkString(",")}")
-
-    s"""
-    {
-      "resourceType": "Bundle",
-      "type": "searchset",
-      "entry": [${queryOutput.queryResults.mkString(",")}]
-    }
-    """
+    println("Returning parsed and bundled FHIR JSON")
+    parser.encodeResourceToString(queryOutput.bundle)
   }
-}
-
-object ServiceManager {
-  def apply(qi: QueryInterpreter, qr: QueryRunner): ServiceManager = new ServiceManager(qi, qr)
 }
