@@ -1,6 +1,7 @@
 import sbt.librarymanagement.ConflictWarning
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
 conflictWarning := ConflictWarning.disable
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -41,7 +42,7 @@ libraryDependencies ++= {
 javaOptions += "--add-opens"
 javaOptions += "java.base/java.nio=ALL-UNNAMED"
 
-fork in run := true
+run / fork := true
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension
@@ -54,11 +55,6 @@ libraryDependencies += "com.zaxxer" % "HikariCP" % "5.1.0"
 
 // Dotenv for loading environment variables
 libraryDependencies += "io.github.cdimascio" % "dotenv-java" % "3.0.0"
-
-// SLF4J for logging
-libraryDependencies += "org.slf4j" % "slf4j-api" % "2.0.9"
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.11" 
-
 
 // Add HAPI FHIR (FHIR R4)
 libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-base" % "6.6.0"

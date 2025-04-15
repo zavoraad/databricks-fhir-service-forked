@@ -4,19 +4,8 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.github.cdimascio.dotenv.Dotenv
 import java.sql.Connection
 import scala.collection.concurrent.TrieMap
-import org.slf4j.LoggerFactory
 
-object DatabaseConnectionPool {
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
-  // Load from .env
-  private val dotenv = Dotenv.configure().ignoreIfMissing().load()
-  private val jdbcUrl = dotenv.get("DATABRICKS_JDBC_URL")
-
-  if (jdbcUrl == null || jdbcUrl.isBlank) {
-    throw new RuntimeException("DATABRICKS_JDBC_URL is not set in .env file!")
-  }
+class DatabaseConnectionPool(val auth: Auth, val conRetries: Int=1, val queryRetries: Int =1)  extends Connection{
 
   // Thread-safe cache to store pools per user
   private val userPools = TrieMap[String, HikariDataSource]()
@@ -28,7 +17,6 @@ object DatabaseConnectionPool {
 
   private def createPoolForUser(userToken: String): HikariDataSource = {
     val config = new HikariConfig()
-    config.setJdbcUrl(jdbcUrl)
     config.setUsername("token")
     config.setPassword(userToken)
     config.setMaximumPoolSize(10)
