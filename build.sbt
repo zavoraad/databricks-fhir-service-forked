@@ -28,9 +28,8 @@ libraryDependencies ++= {
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
+    "com.lihaoyi" %% "upickle" % "4.1.0",
     "com.zaxxer" % "HikariCP" % "5.1.0",
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.0",
-    "com.google.code.gson" % "gson" % "2.10.1",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test"
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,

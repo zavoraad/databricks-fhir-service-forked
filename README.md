@@ -6,12 +6,37 @@
 ## Business Problem
 Complying to FHIR specifications found at: https://www.hl7.org/fhir/http.html
 
+### Deploying
+
+(1) docker image
+(2) Is app running? 
+```python
+#http://localhost:9000/debug/test -> 
+{"status": "FHIR API is running!"}
+```
+
+(3) Debug info for a given request
+```python
+#http://localhost:9000/debug/patient/a62a41dc-5ac1-ff47-3fc5-08f6ad045571 -> 
+queryRuntime (in ms): 2444
+queryStartTime: 2025-04-17T10:05:38.241-04:00
+queryError: None
+numRows: 1
+queryExecuted: SELECT to_json(patient) AS resultset FROM hls_healthcare.databricks_fhir_service_forked.patient WHERE id = 'a62a41dc-5ac1-ff47-3fc5-08f6ad045571'
+```
+
+(4) Running a read request
+```python
+#http://localhost:9000/fhir/patient/a62a41dc-5ac1-ff47-3fc5-08f6ad045571 -> 
+TBD
+```
+
 ## Reference Architecture
 insert/update  -> dbignite to read data and split into tables
 writing -> bundle.py in FHIR
 
 ## Authors
-aaron.zavora@databricks.com
+aaron.zavora@databricks.com, XponentL Data
 
 ## Project support 
 

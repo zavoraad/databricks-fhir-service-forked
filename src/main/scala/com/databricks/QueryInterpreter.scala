@@ -17,7 +17,7 @@ object QueryInterpreter {
 
 class QueryInterpreter(catalog: String, schema: String) {
   def read(resource: String, id: String, params: Map[String, String]): String = {
-    "SELECT to_json(" + resource +".*) AS resultset FROM " + 
+    "SELECT to_json(" + resource + ") AS resultset FROM " + 
     catalog + "." + schema + "." + resource +
     " WHERE id = '" + id + "'".stripMargin
   }
