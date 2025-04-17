@@ -1,6 +1,8 @@
 package com.databricks.industry.solutions.fhirapi
 
-trait Connection{
+import java.sql.Connection
+
+trait DataStore{
   val auth: Auth
   val conRetries: Int
   val queryRetries: Int
@@ -27,8 +29,8 @@ trait Connection{
 
   protected def connect: Connection //internal class connection handling
   def getConnection: Connection //function to interface with 
+  def disconnect: Unit
 
   def executePaged(query: String, retries: Int): Unit = {} //todo return iterator for paging
-      
 }
 

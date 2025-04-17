@@ -1,19 +1,36 @@
 package com.databricks.industry.solutions.fhirapi
 
-import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.parser.IParser
-import org.hl7.fhir.r4.model.{Patient, Bundle}
-import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
-import com.fasterxml.jackson.databind.node.{ObjectNode, ArrayNode}
-
-import java.sql.{Connection, ResultSet}
+import java.sql.{Connection, DriverManager, ResultSet}
+import org.joda.time.DateTime
 import java.util.{Date, UUID}
-import scala.jdk.CollectionConverters._
 
-case class QueryInput(query: String, oboUser: String, userToken: String)
-case class QueryOutput(bundle: Bundle, queryRuntime: Long)
+class QueryRunner (ds: DataStore, queryRetries: Int = 1){
 
+  // method to run the query
+  def runQuery(queryInput: QueryInput): QueryOutput = {
+    val queryStartTime = DateTime.now
+    val r = ds.execute(queryInput.query, queryRetries,ds.getConnection) //returns a tuple of data (Map[String,String], Option(String))
+    QueryOutput(r(0), System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, r(1), queryInput.query)
+
+  }
+}
+
+case class QueryInput(query: String)
+
+case class QueryOutput(val queryResults: List[Map[String, String]], val queryRuntime: Long,val  queryStartTime: DateTime,val  error: Option[String], queryInput: String){
+  override def toString : String = {
+    "queryRuntime (in ms): " + queryRuntime +
+    "\nqueryStartTime: " + queryStartTime +
+    "\nqueryError: " + error.toString +
+    "\nnumRows: " + queryResults.length + 
+    "\nqueryExecuted: " + queryInput
+ }
+}
+
+case class FormattedOutput(queryOutput: QueryOutput, bundle: String)
+
+
+/*
 class QueryRunner {
   private val fhirContext: FhirContext = FhirContext.forR4()
   private val parser: IParser = fhirContext.newJsonParser()
@@ -92,41 +109,5 @@ class QueryRunner {
     bundle.setTotal(bundle.getEntry.size())
     bundle
   }
-
-  // Recursively fixes any stringified extension field in any object
-  private def fixStringifiedExtensions(node: JsonNode): Unit = {
-    node match {
-      case objNode: ObjectNode =>
-        val fields = objNode.fieldNames().asScala.toList
-        fields.foreach { field =>
-          val child = objNode.get(field)
-
-          if (field == "extension" && child.isArray) {
-            val cleanedArray = objectMapper.createArrayNode()
-            for (elem <- child.elements().asScala) {
-              if (elem.isTextual) {
-                try {
-                  val parsed = objectMapper.readTree(elem.asText())
-                  fixStringifiedExtensions(parsed)
-                  cleanedArray.add(parsed)
-                } catch {
-                  case _: Exception => cleanedArray.add(elem)
-                }
-              } else {
-                fixStringifiedExtensions(elem)
-                cleanedArray.add(elem)
-              }
-            }
-            objNode.set("extension", cleanedArray)
-          } else {
-            fixStringifiedExtensions(child)
-          }
-        }
-
-      case arrayNode: ArrayNode =>
-        arrayNode.elements().asScala.foreach(fixStringifiedExtensions)
-
-      case _ => // do nothing
-    }
-  }
-}
+ }
+ */

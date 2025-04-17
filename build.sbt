@@ -28,6 +28,9 @@ libraryDependencies ++= {
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
+    "com.zaxxer" % "HikariCP" % "5.1.0",
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.0",
+    "com.google.code.gson" % "gson" % "2.10.1",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test"
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,
@@ -39,9 +42,6 @@ libraryDependencies ++= {
   ).map(_.cross(CrossVersion.for3Use2_13))
 }
 
-javaOptions += "--add-opens"
-javaOptions += "java.base/java.nio=ALL-UNNAMED"
-
 run / fork := true
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
@@ -50,17 +50,9 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
 
-// HikariCP for connection pooling
-libraryDependencies += "com.zaxxer" % "HikariCP" % "5.1.0"
+enablePlugins(GitVersioning)
+import sbt.Package.ManifestAttributes
 
-// Dotenv for loading environment variables
-libraryDependencies += "io.github.cdimascio" % "dotenv-java" % "3.0.0"
-
-// Add HAPI FHIR (FHIR R4)
-libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-base" % "6.6.0"
-libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-structures-r4" % "6.6.0"
-
-// JSON Handling
-libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.0"
-
-libraryDependencies += "com.google.code.gson" % "gson" % "2.10.1"
+Docker / packageName := "databricks-fhir-api"
+Docker / dockerExposedPorts := Seq(9000) //expose port 9000 in the docker image
+Docker / version := git.gitHeadCommit.value.get
