@@ -11,6 +11,6 @@ trait Auth{
 class TokenAuth(val jdbcURL: String, private val token: String) extends Auth {
   def connect: Connection = {
     Class.forName("com.databricks.client.jdbc.Driver")
-    java.sql.DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
+    DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
   }
 }
