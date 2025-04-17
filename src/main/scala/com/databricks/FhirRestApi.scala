@@ -2,7 +2,7 @@ package com.databricks.industry.solutions.fhirapi
 
 import akka.http.scaladsl.model.ContentTypes
 import akka.actor.ActorSystem
-import akka.event.LoggingAdapter
+import akka.event.{LoggingAdapter,Logging}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
@@ -10,7 +10,6 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import io.github.cdimascio.dotenv.Dotenv
 
 trait FhirService {
   implicit val system: ActorSystem
@@ -19,49 +18,50 @@ trait FhirService {
   def config = ConfigFactory.load()
   val logger: LoggingAdapter
 
-  val qr = new QueryRunner()
-  private val dotenv = Dotenv.configure().ignoreIfMissing().load()
-  private val token = dotenv.get("DATABRICKS_TOKEN")
 
-  val qi = new QueryInterpreter("hive_metastore", "dbignite_demo_jdbc")
-  val sm = new ServiceManager(qi, qr)
+  lazy val service = {
+    ServiceManager(
+      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
+      QueryRunner(
+        SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
+      ))
+   }
 
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat(
         path("test") {
           get {
+            logger.info("/test endpoint get request made")
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
 
           }
         },
-        // path("test-db") {
-        //   get {
-        //     val query = "SELECT * FROM hive_metastore.dbignite_demo_jdbc.patient LIMIT 5"
-        //     val queryInput = QueryInput(query, "admin", token)
-        //     val outputFuture: Future[QueryOutput] = Future(qr.runQuery(queryInput))
-
-        //     onComplete(outputFuture) {
-        //       case Success(result: QueryOutput) =>
-        //         if (result.queryResults.isEmpty)
-        //           complete(HttpResponse(StatusCodes.NotFound, entity = "No data found"))
-        //         else
-        //           complete(HttpEntity(ContentTypes.`application/json`, result.queryResults.mkString(", ")))
-        //       case Failure(ex) =>
-        //         complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Error querying Databricks: ${ex.getMessage}"}"""))
-        //     }
-        //   }
-        // },
+        pathPrefix("fhir-debug") {
+          pathPrefix(Segment){ typeSeg =>
+            pathPrefix(Segment) { idSeg =>
+              get {
+                extractUri { uri =>
+                  val result = service.read(typeSeg, idSeg, (uri.query().toMap))
+                  complete{ HttpEntity(ContentTypes.`application/json`,result.bundle ) }
+                }
+              }
+            }
+          }
+        },
         pathPrefix("fhir") {
-          path("Patient" / Segment) { resourceId =>
-            get {
-              val responseJson = sm.read("Patient", resourceId, Map.empty)
-              complete(HttpEntity(ContentTypes.`application/json`, responseJson))
-
+          pathPrefix(Segment){ typeSeg =>
+            pathPrefix(Segment) { idSeg =>
+              get {
+                extractUri { uri =>
+                  val result = service.read(typeSeg, idSeg, (uri.query().toMap))
+                  complete{ HttpEntity(ContentTypes.`application/json`,result.bundle ) }
+                }
+              }
             }
           }
         }
-      )
+       )
     }
   }
 }
@@ -69,12 +69,8 @@ trait FhirService {
 object FhirService extends App with FhirService {
   override implicit val system: ActorSystem = ActorSystem()
   override implicit val executor: ExecutionContext = system.dispatcher
-  override val logger = system.log
+  override val logger = Logging(system, "AkkaFhirService")
+  override val config = ConfigFactory.load()
 
-  val serverHost = config.getString("http.interface")
-  val serverPort = config.getInt("http.port")
-  val port = if (serverPort == 9000) 9001 else serverPort
-
-  Http().newServerAt(serverHost, port).bindFlow(routes)
-  println(s"FHIR Service is running at http://$serverHost:$port")
+  Http().newServerAt(config.getString("http.interface"), config.getInt("http.port")).bindFlow(routes)
 }

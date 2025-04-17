@@ -1,5 +1,7 @@
 package com.databricks.industry.solutions.fhirapi
 
+import java.sql.{Connection,DriverManager}
+
 trait Auth{
   def connect: Connection
   def disconnect(c: Connection): Unit = c.close
@@ -9,6 +11,6 @@ trait Auth{
 class TokenAuth(val jdbcURL: String, private val token: String) extends Auth {
   def connect: Connection = {
     Class.forName("com.databricks.client.jdbc.Driver")
-    DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
+    java.sql.DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
   }
 }
