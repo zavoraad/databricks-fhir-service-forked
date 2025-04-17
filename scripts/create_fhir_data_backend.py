@@ -22,7 +22,7 @@ df = bundle.entry(schemas =  FhirSchemaModel(schema_version="r4"))
 from multiprocessing.pool import ThreadPool
 import multiprocessing as mp
 def table_write(entry, column, location = "", write_mode = "overwrite"):
-  entry.select(explode(column).alias(column)).write.mode(write_mode).saveAsTable( (location + "." + column).lstrip("."))
+  entry.select(explode(column).alias(column)).select(column, column + ".id").write.mode(write_mode).saveAsTable( (location + "." + column).lstrip("."))
 
 def bulk_table_write(entry, 
                      location = "",  

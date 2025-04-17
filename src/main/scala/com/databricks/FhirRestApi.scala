@@ -30,14 +30,7 @@ trait FhirService {
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat(
-        path("test") {
-          get {
-            logger.info("/test endpoint get request made")
-            complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
-
-          }
-        },
-        pathPrefix("fhir-debug") {
+        pathPrefix("debug") {
           pathPrefix(Segment){ typeSeg =>
             pathPrefix(Segment) { idSeg =>
               get {
@@ -47,6 +40,12 @@ trait FhirService {
                 }
               }
             }
+          }
+        },
+        path("debug" / "test") {
+          get {
+            logger.info("/debug/test endpoint get request made")
+            complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
           }
         },
         pathPrefix("fhir") {
