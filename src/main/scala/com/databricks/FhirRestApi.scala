@@ -22,9 +22,9 @@ trait FhirService {
   lazy val service = {
     ServiceManager(
       QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
-      QueryRunner(
-        SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
-      ))
+      new QueryRunner(
+      SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
+    ))
    }
 
   val routes: Route = {
@@ -49,17 +49,19 @@ trait FhirService {
           }
         },
         pathPrefix("fhir") {
-          pathPrefix(Segment){ typeSeg =>
+          pathPrefix(Segment) { typeSeg =>
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
-                  val result = service.read(typeSeg, idSeg, (uri.query().toMap))
-                  complete{ HttpEntity(ContentTypes.`application/json`,result.bundle ) }
+                  val result = service.read(typeSeg, idSeg, uri.query().toMap)
+                  complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
                 }
               }
             }
           }
         }
+
+
        )
     }
   }
