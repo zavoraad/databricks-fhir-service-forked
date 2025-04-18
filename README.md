@@ -8,11 +8,16 @@ Complying to FHIR specifications found at: https://www.hl7.org/fhir/http.html
 
 ### Deploying
 
-(1) docker image
-(2) Is app running? 
+(1) Is app running? 
 ```python
 #http://localhost:9000/debug/test -> 
 {"status": "FHIR API is running!"}
+```
+
+(2) Can the app get a conncetion to a DBSQL Warehouse?
+```python
+#http://localhost:9000/debug/dbsqlConnect -> 
+com.databricks.client.hivecommon.jdbc42.Hive42Connection@1f0f417e
 ```
 
 (3) Debug info for a given request
