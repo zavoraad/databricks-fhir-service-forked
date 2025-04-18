@@ -6,6 +6,12 @@
 ## Business Problem
 Complying to FHIR specifications found at: https://www.hl7.org/fhir/http.html
 
+### Configuring
+
+All configurations under Databricks can be overridden with environment variables that are set  prior to app launching
+
+https://github.com/zavoraad/databricks-fhir-service-forked/blob/docker-build/src/main/resources/application.conf
+
 ### Deploying
 
 (1) Is app running? 
