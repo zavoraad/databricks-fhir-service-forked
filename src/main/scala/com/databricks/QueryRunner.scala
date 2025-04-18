@@ -29,6 +29,7 @@ case class QueryOutput(
        |queryError: ${error.getOrElse("None")}
        |numRows: ${queryResults.length}
        |queryExecuted: $queryInput
+       |data: $queryResults
        |""".stripMargin
   }
 }
