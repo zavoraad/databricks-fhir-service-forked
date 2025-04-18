@@ -36,7 +36,7 @@ trait FhirService {
               get {
                 extractUri { uri =>
                   val result = service.read(typeSeg, idSeg, (uri.query().toMap))
-                  complete{ HttpEntity(ContentTypes.`application/json`,result.bundle ) }
+                  complete{ result.queryOutput.toString  }
                 }
               }
             }
@@ -46,6 +46,11 @@ trait FhirService {
           get {
             logger.info("/debug/test endpoint get request made")
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
+          }
+        },
+        path("debug" / "dbsqlConnect") {
+          get {
+            complete(service.qr.ds.getConnection.toString)
           }
         },
         pathPrefix("fhir") {
@@ -60,8 +65,6 @@ trait FhirService {
             }
           }
         }
-
-
        )
     }
   }

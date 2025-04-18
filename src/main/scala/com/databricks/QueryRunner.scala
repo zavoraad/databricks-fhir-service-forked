@@ -3,12 +3,10 @@ package com.databricks.industry.solutions.fhirapi
 import java.sql.Connection
 import org.joda.time.DateTime
 import java.util.{Date, UUID}
-import com.fasterxml.jackson.databind.ObjectMapper
-import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.parser.IParser
-import org.hl7.fhir.r4.model.{Bundle, Extension, StringType, Basic}
+import ujson.Obj
 
-class QueryRunner(ds: DataStore, queryRetries: Int = 1) {
+
+class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
   def runQuery(queryInput: QueryInput): QueryOutput = {
     val queryStartTime = DateTime.now
     val (results, error) = ds.execute(queryInput.query, queryRetries, ds.getConnection)
@@ -40,12 +38,38 @@ case class QueryOutput(
 case class FormattedOutput(queryOutput: QueryOutput, bundle: String)
 
 object FormattedOutput {
-  private val fhirContext: FhirContext = FhirContext.forR4()
-  private val parser: IParser = fhirContext.newJsonParser()
-  private val objectMapper = new ObjectMapper()
-
   def fromQueryOutputSearch(queryOutput: QueryOutput): FormattedOutput = {
-    val bundle = new Bundle()
+    FormattedOutput(queryOutput,
+      """{"resourceType": "Bundle","type":"searchset","entry":[ 
+      """ +
+        queryOutput.queryResults.flatMap(x => {
+          x.map { case (key, value) =>
+            val j = ujson.read(value)
+            j("resourceType") = key
+            Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("id").value})
+          }
+        }).mkString(",") +
+        """]}"""
+    )
+     
+      /*
+"""
+{
+  "fullUrl": "urn:uuid:",
+  "resource": {
+    "resourceType": """ + $x[0] + """,
+    x[1]
+   }
+}
+"""
+     })
+
+     */
+    /*
+    queryResults.
+    ujson.read(
+
+      val bundle = new Bundle()
     bundle.setType(Bundle.BundleType.SEARCHSET)
     bundle.setId(UUID.randomUUID().toString)
     bundle.setTimestamp(new Date())
@@ -59,31 +83,8 @@ object FormattedOutput {
     }
 
     bundle.setTotal(bundle.getEntry.size())
-    FormattedOutput(queryOutput, parser.encodeResourceToString(bundle))
-  }
-
-  private def parseAndAddToBundle(rawJson: String, bundle: Bundle): Unit = {
-    try {
-      val resource = new Basic()
-      val uuid = UUID.randomUUID().toString
-      resource.setId(uuid)
-
-      val extension = new Extension()
-      extension.setUrl("http://example.org/fhir/StructureDefinition/raw-patient-json")
-      extension.setValue(new StringType(rawJson))
-
-      resource.addExtension(extension)
-
-      val entry = new Bundle.BundleEntryComponent()
-      entry.setFullUrl(s"urn:uuid:$uuid")
-      entry.setResource(resource)
-      bundle.addEntry(entry)
-    } catch {
-      case e: Exception =>
-        println("======= Failed to wrap raw JSON in bundle =======")
-        println(e.getMessage)
-        e.printStackTrace()
-    }
+     FormattedOutput(queryOutput, parser.encodeResourceToString(bundle))
+     */
   }
 }
 
