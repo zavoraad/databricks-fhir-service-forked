@@ -41,7 +41,20 @@ libraryDependencies ++= {
   ).map(_.cross(CrossVersion.for3Use2_13))
 }
 
+// HAPI FHIR R4 (FHIR Bundle, Patient, etc.)
+libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-structures-r4" % "6.10.0"
+libraryDependencies += "ca.uhn.hapi.fhir" % "hapi-fhir-base" % "6.10.0"
+
+// Jackson Core (JSON parsing)
+libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.2"
+
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.9"
+
 run / fork := true
+
+
+// check this
+javaOptions in run += "--add-opens=java.base/java.nio=ALL-UNNAMED"
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension
