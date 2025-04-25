@@ -51,6 +51,11 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 }
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
+assembly / assemblyMergeStrategy := {
+    case PathList("META-INF", xs@_*) => MergeStrategy.discard
+    case x => MergeStrategy.first
+}
+
 
 enablePlugins(GitVersioning)
 import sbt.Package.ManifestAttributes
