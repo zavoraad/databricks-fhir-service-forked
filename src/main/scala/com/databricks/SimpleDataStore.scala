@@ -5,7 +5,7 @@ import java.sql.Connection
  * One connection reused everywhere
  */
 class SimpleDataStore(val auth: Auth, val conRetries: Int = 1, val queryRetries: Int = 1) extends DataStore{
-  override def getConnection: Connection = con
+  override def getConnection: Connection = con //TODO add check to make sure connection is not closed()
   lazy val con = connect
 
   override def connect: Connection = {
