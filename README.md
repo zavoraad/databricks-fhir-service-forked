@@ -39,7 +39,18 @@ queryExecuted: SELECT to_json(patient) AS resultset FROM hls_healthcare.databric
 (4) Running a read request
 ```python
 #http://localhost:9000/fhir/patient/a62a41dc-5ac1-ff47-3fc5-08f6ad045571 -> 
-TBD
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "entry": [
+    {
+      "resource": {
+        "id": "a62a41dc-5ac1-ff47-3fc5-08f6ad045571",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+          ]
+        },
 ```
 
 ## Reference Architecture
