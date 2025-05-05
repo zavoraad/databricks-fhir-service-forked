@@ -6,12 +6,59 @@
 ## Business Problem
 Complying to FHIR specifications found at: https://www.hl7.org/fhir/http.html
 
+### Configuring
+
+All configurations under Databricks can be overridden with environment variables that are set  prior to app launching
+
+https://github.com/zavoraad/databricks-fhir-service-forked/blob/docker-build/src/main/resources/application.conf
+
+### Deploying
+
+(1) Is app running? 
+```python
+#http://localhost:9000/debug/test -> 
+{"status": "FHIR API is running!"}
+```
+
+(2) Can the app get a conncetion to a DBSQL Warehouse?
+```python
+#http://localhost:9000/debug/dbsqlConnect -> 
+com.databricks.client.hivecommon.jdbc42.Hive42Connection@1f0f417e
+```
+
+(3) Debug info for a given request
+```python
+#http://localhost:9000/debug/patient/a62a41dc-5ac1-ff47-3fc5-08f6ad045571 -> 
+queryRuntime (in ms): 2444
+queryStartTime: 2025-04-17T10:05:38.241-04:00
+queryError: None
+numRows: 1
+queryExecuted: SELECT to_json(patient) AS resultset FROM hls_healthcare.databricks_fhir_service_forked.patient WHERE id = 'a62a41dc-5ac1-ff47-3fc5-08f6ad045571'
+```
+
+(4) Running a read request
+```python
+#http://localhost:9000/fhir/patient/a62a41dc-5ac1-ff47-3fc5-08f6ad045571 -> 
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "entry": [
+    {
+      "resource": {
+        "id": "a62a41dc-5ac1-ff47-3fc5-08f6ad045571",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+          ]
+        },
+```
+
 ## Reference Architecture
 insert/update  -> dbignite to read data and split into tables
 writing -> bundle.py in FHIR
 
 ## Authors
-aaron.zavora@databricks.com
+aaron.zavora@databricks.com, XponentL Data
 
 ## Project support 
 

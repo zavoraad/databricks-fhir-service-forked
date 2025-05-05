@@ -1,76 +1,80 @@
 package com.databricks.industry.solutions.fhirapi
 
+import akka.http.scaladsl.model.ContentTypes
 import akka.actor.ActorSystem
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{LoggingAdapter,Logging}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.Decoder.Result
-import io.circe.{Decoder, Encoder, HCursor, Json}
-
-import java.io.IOException
 import scala.concurrent.{ExecutionContext, Future}
-import scala.math._
-
+import scala.util.{Failure, Success}
 
 trait FhirService {
   implicit val system: ActorSystem
   implicit def executor: ExecutionContext
 
-  def config: Config
+  def config = ConfigFactory.load()
   val logger: LoggingAdapter
 
-  val qw = QueryWriter("hls_healthcare", "hls_dev")
 
-  val qr = new QueryRunner()
+  lazy val service = {
+    ServiceManager(
+      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
+      new QueryRunner(
+      SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
+    ))
+   }
 
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
-      concat (
-        path("test") {
-          get {
-            complete { "TODO test" }
-          }
-        },
-        pathPrefix("fhir") {
+      concat(
+        pathPrefix("debug") {
           pathPrefix(Segment){ typeSeg =>
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
-                  //complete{ qw.read(typeSeg, idSeg, (uri.query().toMap)) }
-                  
-                  val query = qw.read(typeSeg, idSeg, uri.query().toMap)
-                  val queryInput = QueryInput(query, "user123")
-                  // Use QueryRunner to run the constructed query
-                  val output = qr.runQuery(queryInput)
-                  // Complete with results from QueryRunner
-                  complete(output.queryResults.mkString(", "))
-                  
+                  val result = service.read(typeSeg, idSeg, (uri.query().toMap))
+                  complete{ result.queryOutput.toString  }
+                }
+              }
+            }
+          }
+        },
+        path("debug" / "test") {
+          get {
+            logger.info("/debug/test endpoint get request made")
+            complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
+          }
+        },
+        path("debug" / "dbsqlConnect") {
+          get {
+            complete(service.qr.ds.getConnection.toString)
+          }
+        },
+        pathPrefix("fhir") {
+          pathPrefix(Segment) { typeSeg =>
+            pathPrefix(Segment) { idSeg =>
+              get {
+                extractUri { uri =>
+                  val result = service.read(typeSeg, idSeg, uri.query().toMap)
+                  complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
                 }
               }
             }
           }
         }
-      )
+       )
     }
   }
 }
 
-object AkkFhirService extends App with FhirService {
+object FhirService extends App with FhirService {
   override implicit val system: ActorSystem = ActorSystem()
   override implicit val executor: ExecutionContext = system.dispatcher
-
-  override val config = ConfigFactory.load()
   override val logger = Logging(system, "AkkaFhirService")
+  override val config = ConfigFactory.load()
 
   Http().newServerAt(config.getString("http.interface"), config.getInt("http.port")).bindFlow(routes)
 }

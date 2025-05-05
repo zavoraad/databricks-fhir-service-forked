@@ -1,7 +1,7 @@
-
 import sbt.librarymanagement.ConflictWarning
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
 conflictWarning := ConflictWarning.disable
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -28,6 +28,8 @@ libraryDependencies ++= {
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
+    "com.lihaoyi" %% "upickle" % "4.1.0",
+    "com.zaxxer" % "HikariCP" % "5.1.0",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test"
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,
@@ -39,13 +41,25 @@ libraryDependencies ++= {
   ).map(_.cross(CrossVersion.for3Use2_13))
 }
 
-javaOptions += "--add-opens"
-javaOptions += "java.base/java.nio=ALL-UNNAMED"
+run / fork := true
 
-fork in run := true
+// check this
+javaOptions in run += "--add-opens=java.base/java.nio=ALL-UNNAMED"
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension
 }
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
+assembly / assemblyMergeStrategy := {
+    case PathList("META-INF", xs@_*) => MergeStrategy.discard
+    case x => MergeStrategy.first
+}
+
+
+enablePlugins(GitVersioning)
+import sbt.Package.ManifestAttributes
+
+Docker / packageName := "databricks-fhir-api"
+Docker / dockerExposedPorts := Seq(9000) //expose port 9000 in the docker image
+Docker / version := git.gitHeadCommit.value.get
