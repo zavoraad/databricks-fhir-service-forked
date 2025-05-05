@@ -1,0 +1,45 @@
+# Simple Build Tool
+# http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
+
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+
+# Ignore SBT build artifacts
+project/target/*
+project/streams/
+project/boot/
+
+# Ignore IDE and editor metadata
+.vscode/
+.bloop/
+.metals/
+metals.sbt
+sbt.json
+.history
+.cache
+
+# Ignore exported and temporary files
+export/
+output/
+output_dsp/
+previous/
+inputs/
+
+# Ignore compiled class files
+*.class
+
+# Additional entries based on your changes
+input_dsp/
+output_dsp/
+out/
+inputs/
+export/
+
+.env
+
+.bsp/
