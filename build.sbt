@@ -60,29 +60,6 @@ assembly / assemblyMergeStrategy := {
     case x => MergeStrategy.first
 }
 
-// Use assembly option to relocate Akka packages
-assembly / assemblyOption := (assembly / assemblyOption).value.withScalaModuleInfo(false)
-
-// Create relocations for Akka packages
-ThisBuild / assemblyMergeStrategy := {
-  case x if x.contains("reference.conf") || x.contains("application.conf") => MergeStrategy.concat
-  case x =>
-    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
-    oldStrategy(x)
-}
-
-// Assembly shade rules for Akka
-assembly / assemblyShadeRules := Seq(
-  ShadeRule.rename("akka.**" -> "akka.@1")
-    .inAll
-    .exclude("reference.conf")
-    .exclude("application.conf"),
-  ShadeRule.rename("com.typesafe.**" -> "com.typesafe.@1")
-    .inAll
-    .exclude("reference.conf")
-    .exclude("application.conf")
-)
-
 enablePlugins(GitVersioning)
 import sbt.Package.ManifestAttributes
 
