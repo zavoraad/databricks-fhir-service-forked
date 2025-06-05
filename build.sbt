@@ -57,6 +57,11 @@ assembly / assemblyMergeStrategy := {
     case x => MergeStrategy.first
 }
 
+// Assembly shade rules for Akka
+assembly / assemblyShadeRules := Seq(
+  ShadeRule.rename("akka.**" -> "shaded.akka.@1").inAll,
+  ShadeRule.rename("com.typesafe.config.**" -> "shaded.com.typesafe.config.@1").inAll
+)
 
 enablePlugins(GitVersioning)
 import sbt.Package.ManifestAttributes
