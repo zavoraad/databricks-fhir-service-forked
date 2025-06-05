@@ -43,3 +43,5 @@ export/
 .env
 
 .bsp/
+
+src/main/resources/application.conf
