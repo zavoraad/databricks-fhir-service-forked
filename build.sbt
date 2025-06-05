@@ -1,4 +1,5 @@
 import sbt.librarymanagement.ConflictWarning
+import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
 
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
@@ -54,13 +55,32 @@ javacOptions ++= Seq("-source", "17", "-target", "17")
 assembly / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
 assembly / assemblyMergeStrategy := {
     case PathList("META-INF", xs@_*) => MergeStrategy.discard
+    case PathList("reference.conf") => MergeStrategy.concat
+    case PathList("application.conf") => MergeStrategy.concat
     case x => MergeStrategy.first
+}
+
+// Use assembly option to relocate Akka packages
+assembly / assemblyOption := (assembly / assemblyOption).value.withScalaModuleInfo(false)
+
+// Create relocations for Akka packages
+ThisBuild / assemblyMergeStrategy := {
+  case x if x.contains("reference.conf") || x.contains("application.conf") => MergeStrategy.concat
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
 }
 
 // Assembly shade rules for Akka
 assembly / assemblyShadeRules := Seq(
-  ShadeRule.rename("akka.**" -> "shaded.akka.@1").inAll,
-  ShadeRule.rename("com.typesafe.config.**" -> "shaded.com.typesafe.config.@1").inAll
+  ShadeRule.rename("akka.**" -> "akka.@1")
+    .inAll
+    .exclude("reference.conf")
+    .exclude("application.conf"),
+  ShadeRule.rename("com.typesafe.**" -> "com.typesafe.@1")
+    .inAll
+    .exclude("reference.conf")
+    .exclude("application.conf")
 )
 
 enablePlugins(GitVersioning)
