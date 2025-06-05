@@ -54,18 +54,23 @@ trait FhirService {
           }
         },
         pathPrefix("fhir") {
-          pathPrefix(Segment) { typeSeg =>
-            pathPrefix(Segment) { idSeg =>
-              get {
-                extractUri { uri =>
-                  val result = service.read(typeSeg, idSeg, uri.query().toMap)
-                  complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
+          concat(
+            pathPrefix(Segment) { typeSeg =>
+              pathPrefix(Segment) { idSeg =>
+                get {
+                  extractUri { uri =>
+                    val result = service.read(typeSeg, idSeg, uri.query().toMap)
+                    complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
+                  }
                 }
               }
+            },
+            pathPrefix("_search"){
+              complete("_search endpoint")
             }
-          }
+          )
         }
-       )
+      )
     }
   }
 }
