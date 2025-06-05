@@ -10,7 +10,8 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
   }
 
   //TODO Gerta create PaginatedFormattedOutput for iterating through
-  def search(typeSeg: String, queryParams: Map[String, String], baseUrl: String): PaginatedFormattedOutput = {
+  def search(typeSeg: String, queryParams: Map[String, String], baseUrl: String): Unit = { //PaginatedFormattedOutput = {
+    ???
     // Build search query using existing QueryInterpreter
     //val sql = qi.search(typeSeg, queryParams)
 
