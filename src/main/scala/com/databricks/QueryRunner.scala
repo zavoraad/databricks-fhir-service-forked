@@ -47,7 +47,7 @@ object FormattedOutput {
           x.map { case (key, value) =>
             val j = ujson.read(value)
             j("resourceType") = key
-            Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("id").value})
+            Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("fhir_id").value})
           }
         }).mkString(",") +
         """]}"""
