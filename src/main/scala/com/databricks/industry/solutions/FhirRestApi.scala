@@ -27,7 +27,7 @@ trait FhirService {
 //          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
 //        )
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
-          conRetries = 2, queryRetries = 2, maxPoolSize = 8)
+          conRetries = 2, queryRetries = 2)
 //SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
       )
     )
