@@ -10,20 +10,25 @@ class PoolDataStore(val auth: Auth, val conRetries: Int=1, val queryRetries: Int
   private val authConfig = new HikariConfig()
   authConfig.setMinimumIdle(minIdle)
   authConfig.setMaximumPoolSize(maxPoolSize)
-
-  val hds = new HikariDataSource(authConfig)
-
-  //TODO give me one connection from the pool 
-  override def getConnection: Connection = {
-    ???
+  authConfig.setDriverClassName("com.databricks.client.jdbc.Driver")
+  auth match {
+    case a : TokenAuth =>
+      authConfig.setUsername("token")
+      authConfig.setPassword(a.token)
+      authConfig.setJdbcUrl(a.jdbcURL)
   }
 
-  //TODO tell me how you want to authenticate given that you have an "Auth" class
+  lazy val hds = new HikariDataSource(authConfig)
+
+  override def getConnection: Connection = {
+    hds.getConnection
+  }
+
   protected def connect: Connection = {
-    ???
+    hds.getConnection //HDS is already handling this all for us
   }
 
   override def disconnect: Unit = {
-    ???
+    hds.close
   }
 }

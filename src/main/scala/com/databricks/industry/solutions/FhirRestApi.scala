@@ -23,8 +23,14 @@ trait FhirService {
     ServiceManager(
       QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
       new QueryRunner(
-      SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
-    ))
+//        Class.forName("com.databricks.industry.solutions.fhirapi." + config.getString("databricks.warehouse.class"))(
+//          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
+//        )
+        PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
+          conRetries = 2, queryRetries = 2, maxPoolSize = 8)
+//SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
+      )
+    )
    }
 
   val routes: Route = {
@@ -47,6 +53,9 @@ trait FhirService {
             logger.info("/debug/test endpoint get request made")
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
           }
+        },
+        path("debug" / "java.nio"){
+          complete(System.getProperties.toString)
         },
         path("debug" / "dbsqlConnect") {
           get {
