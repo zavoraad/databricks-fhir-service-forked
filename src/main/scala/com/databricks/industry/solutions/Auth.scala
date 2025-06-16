@@ -8,9 +8,12 @@ trait Auth{
   def canConnect(c: Connection): Boolean = c.isValid(5)
 }
 
-class TokenAuth(val jdbcURL: String, private val token: String) extends Auth {
+class TokenAuth(val jdbcURL: String, val token: String) extends Auth {
   def connect: Connection = {
     Class.forName("com.databricks.client.jdbc.Driver")
-    DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
+    jdbcURL.takeRight(1) match {
+      case ";" =>     DriverManager.getConnection(jdbcURL + "UID=token;PWD=" + token)
+      case _ =>  DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
+    }
   }
 }
