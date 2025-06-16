@@ -3,13 +3,14 @@ package com.databricks.industry.solutions.fhirapi
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import java.sql.Connection
 
-//TODO any additional settings make class variables
-class PoolDataStore(val auth: Auth, val conRetries: Int=1, val queryRetries: Int =1, val minIdle: Int=1, val maxPoolSize: Int = 10)  extends DataStore{
+class PoolDataStore(val auth: Auth, val conRetries: Int=1, val queryRetries: Int =1, val minIdle: Int=1, val maxPoolSize: Int = -1)  extends DataStore{
 
-  //TODO any additional connection variables add below for config
   private val authConfig = new HikariConfig()
   authConfig.setMinimumIdle(minIdle)
-  authConfig.setMaximumPoolSize(maxPoolSize)
+  maxPoolSize match {
+    case -1 => authConfig.setMaximumPoolSize(Runtime.getRuntime().availableProcessors() -1) //default max pool size to # of CPUs -1
+    case _ => authConfig.setMaximumPoolSize(maxPoolSize)
+  }
   authConfig.setDriverClassName("com.databricks.client.jdbc.Driver")
   auth match {
     case a : TokenAuth =>
