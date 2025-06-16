@@ -34,56 +34,55 @@ case class QueryOutput(
   }
 }
 
-
 // can be moved to a new file
 case class FormattedOutput(queryOutput: QueryOutput, bundle: String)
 
 object FormattedOutput {
   def fromQueryOutputSearch(queryOutput: QueryOutput): FormattedOutput = {
     FormattedOutput(queryOutput,
-      """{"resourceType": "Bundle","type":"searchset","entry":[ 
+      """{"resourceType": "Bundle","type":"searchset","entry":[
       """ +
         queryOutput.queryResults.flatMap(x => {
           x.map { case (key, value) =>
             val j = ujson.read(value)
             j("resourceType") = key
-            Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("id").value})
+            Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("fhir_id").value})
           }
         }).mkString(",") +
         """]}"""
     )
-     
-      /*
-"""
-{
-  "fullUrl": "urn:uuid:",
-  "resource": {
-    "resourceType": """ + $x[0] + """,
-    x[1]
-   }
-}
-"""
+
+    /*
+     """
+     {
+     "fullUrl": "urn:uuid:",
+     "resource": {
+     "resourceType": """ + $x[0] + """,
+     x[1]
+     }
+     }
+     """
      })
 
      */
     /*
-    queryResults.
-    ujson.read(
+     queryResults.
+     ujson.read(
 
-      val bundle = new Bundle()
-    bundle.setType(Bundle.BundleType.SEARCHSET)
-    bundle.setId(UUID.randomUUID().toString)
-    bundle.setTimestamp(new Date())
+     val bundle = new Bundle()
+     bundle.setType(Bundle.BundleType.SEARCHSET)
+     bundle.setId(UUID.randomUUID().toString)
+     bundle.setTimestamp(new Date())
 
-    if (queryOutput.queryResults.nonEmpty) {
-      queryOutput.queryResults.foreach { row =>
-        row.foreach {
-          case (_, rawJson) => parseAndAddToBundle(rawJson, bundle)
-        }
-      }
-    }
+     if (queryOutput.queryResults.nonEmpty) {
+     queryOutput.queryResults.foreach { row =>
+     row.foreach {
+     case (_, rawJson) => parseAndAddToBundle(rawJson, bundle)
+     }
+     }
+     }
 
-    bundle.setTotal(bundle.getEntry.size())
+     bundle.setTotal(bundle.getEntry.size())
      FormattedOutput(queryOutput, parser.encodeResourceToString(bundle))
      */
   }

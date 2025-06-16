@@ -23,8 +23,14 @@ trait FhirService {
     ServiceManager(
       QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
       new QueryRunner(
-      SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
-    ))
+//        Class.forName("com.databricks.industry.solutions.fhirapi." + config.getString("databricks.warehouse.class"))(
+//          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
+//        )
+        PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
+          conRetries = 2, queryRetries = 2)
+//SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
+      )
+    )
    }
 
   val routes: Route = {
@@ -48,24 +54,32 @@ trait FhirService {
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
           }
         },
+        path("debug" / "java.nio"){
+          complete(System.getProperties.toString)
+        },
         path("debug" / "dbsqlConnect") {
           get {
             complete(service.qr.ds.getConnection.toString)
           }
         },
         pathPrefix("fhir") {
-          pathPrefix(Segment) { typeSeg =>
-            pathPrefix(Segment) { idSeg =>
-              get {
-                extractUri { uri =>
-                  val result = service.read(typeSeg, idSeg, uri.query().toMap)
-                  complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
+          concat(
+            pathPrefix(Segment) { typeSeg =>
+              pathPrefix(Segment) { idSeg =>
+                get {
+                  extractUri { uri =>
+                    val result = service.read(typeSeg, idSeg, uri.query().toMap)
+                    complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
+                  }
                 }
               }
+            },
+            pathPrefix("_search"){
+              complete("_search endpoint")
             }
-          }
+          )
         }
-       )
+      )
     }
   }
 }

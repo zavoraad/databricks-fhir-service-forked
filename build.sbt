@@ -1,4 +1,5 @@
 import sbt.librarymanagement.ConflictWarning
+import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
 
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
@@ -29,7 +30,7 @@ libraryDependencies ++= {
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
     "com.lihaoyi" %% "upickle" % "4.1.0",
-    "com.zaxxer" % "HikariCP" % "5.1.0",
+    "com.zaxxer" % "HikariCP" % "6.3.0",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test"
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,
@@ -42,17 +43,18 @@ libraryDependencies ++= {
 }
 
 run / fork := true
-
-// check this
-javaOptions in run += "--add-opens=java.base/java.nio=ALL-UNNAMED"
+run / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension
 }
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
+assembly / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
 assembly / assemblyMergeStrategy := {
     case PathList("META-INF", xs@_*) => MergeStrategy.discard
+    case PathList("reference.conf") => MergeStrategy.concat
+    case PathList("application.conf") => MergeStrategy.concat
     case x => MergeStrategy.first
 }
 
