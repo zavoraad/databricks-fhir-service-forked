@@ -25,9 +25,8 @@ object FormatManager {
             case Some(c)  => ???
             case None => {
                 qo.queryResults.flatMap(t => 
-                    t.values.map(x => ujson.read(x))
+                    t.values.filter(s => s.length > 0).map(x => ujson.read(x))
                 ).mkString("\n")
-                //.filter(s => s.length > 0).mkString("\n")
             }
         }
     }
