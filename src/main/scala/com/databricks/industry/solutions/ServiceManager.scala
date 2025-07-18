@@ -6,7 +6,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
     val sql = qi.read(typeSeg, idSeg, uri)
     val result = qr.runQuery(QueryInput(sql))
     //result
-    FormattedOutput.fromQueryOutputSearch(result)
+    FormatManager.fromQueryOutputSearch(result)
   }
 
   //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged
