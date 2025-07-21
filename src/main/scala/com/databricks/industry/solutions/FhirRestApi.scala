@@ -23,12 +23,8 @@ trait FhirService {
     ServiceManager(
       QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema"),  BaseAlias.fromConfig(config, "databricks.alias.wherepredicate")),
       new QueryRunner(
-//        Class.forName("com.databricks.industry.solutions.fhirapi." + config.getString("databricks.warehouse.class"))(
-//          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
-//        )
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
           conRetries = 2, queryRetries = 2)
-//SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
       )
     )
    }
@@ -69,7 +65,7 @@ trait FhirService {
                 get {
                   extractUri { uri =>
                     val result = service.read(typeSeg, idSeg, uri.query().toMap)
-                    complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
+                    complete(result.bundle)
                   }
                 }
               }

@@ -12,7 +12,7 @@ object FormatManager {
     def ErrorDefault(qo: QueryOutput): FormattedOutput = {
         FormattedOutput(qo, """{
                 "error": "Bad Request",
-                "message": qo.error,
+                "message": """ + qo.error + """",
                 "status": 400
             }""""
         )
