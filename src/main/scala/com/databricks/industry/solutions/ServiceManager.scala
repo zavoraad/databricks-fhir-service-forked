@@ -7,7 +7,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
     val result = qr.runQuery(QueryInput(sql))
     result.error match {
       case Some(x) => FormatManager.ErrorDefault(result)
-      case None => FormatManager.fromQueryOutputSearch(result)
+      case None =>FormattedOutput(result, FormatManager.resourceAsNDJSON(result))
     }    
   }
 
