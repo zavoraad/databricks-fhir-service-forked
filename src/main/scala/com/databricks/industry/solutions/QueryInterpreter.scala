@@ -19,12 +19,12 @@ object QueryInterpreter {
   }
 }
 
-class QueryInterpreter(catalog: String, schema: String, predicateAlias: Alias) {
+class QueryInterpreter(val catalog: String, val schema: String, val predicateAlias: Alias) {
   
   def read(resource: String, id: String, params: Map[String, String]): String = {
     "SELECT to_json(struct(*)) AS " + resource + " FROM " + 
     catalog + "." + schema + "." + resource +
-    " WHERE " + predicateAlias.translate(id) + " = '" + id + "'".stripMargin
+    " WHERE " + predicateAlias.translate("id") + " = '" + id + "'".stripMargin
   }
 }
 
@@ -35,6 +35,7 @@ class QueryInterpreter(catalog: String, schema: String, predicateAlias: Alias) {
 
 trait Alias{
   def translate(s:String): String
+  val a: Option[Map[String, String]]
 }
 
 class BaseAlias(val a: Option[Map[String, String]] = None) extends Alias{
@@ -42,7 +43,7 @@ class BaseAlias(val a: Option[Map[String, String]] = None) extends Alias{
     override def translate(s: String): String = {
      a match {
       case None => s
-      case Some(x) => x(s)
+      case Some(x) => x.getOrElse(s,s)
     }
   }
 }
@@ -51,7 +52,7 @@ class BaseAlias(val a: Option[Map[String, String]] = None) extends Alias{
 object BaseAlias{
   def fromConfig(config: Config, path: String): Alias = {
     config.hasPath(path) match{
-      case true => new BaseAlias(Some(configToMap(config.atPath(path))))
+      case true => new BaseAlias(Some(configToMap(config.getConfig(path))))
       case false => BaseAlias(None)
     }
   }
