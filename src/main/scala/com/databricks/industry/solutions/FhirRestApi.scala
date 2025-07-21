@@ -21,7 +21,7 @@ trait FhirService {
 
   lazy val service = {
     ServiceManager(
-      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
+      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema"),  BaseAlias.fromConfig(config, "databricks.alias.wherepredicate")),
       new QueryRunner(
 //        Class.forName("com.databricks.industry.solutions.fhirapi." + config.getString("databricks.warehouse.class"))(
 //          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))

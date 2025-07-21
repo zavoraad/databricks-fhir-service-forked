@@ -5,8 +5,10 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
   def read(typeSeg: String, idSeg: String, uri: Map[String, String]): FormattedOutput = {
     val sql = qi.read(typeSeg, idSeg, uri)
     val result = qr.runQuery(QueryInput(sql))
-    //result
-    FormatManager.fromQueryOutputSearch(result)
+    result.error match {
+      case Some(x) => FormatManager.ErrorDefault(result)
+      case None => FormatManager.fromQueryOutputSearch(result)
+    }    
   }
 
   //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged
