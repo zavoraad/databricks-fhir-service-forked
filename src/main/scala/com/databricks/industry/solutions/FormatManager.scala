@@ -9,6 +9,15 @@ case class FormattedOutput(queryOutput: QueryOutput, bundle: String)
 
 object FormatManager {
 
+    def ErrorDefault(qo: QueryOutput): FormattedOutput = {
+        FormattedOutput(qo, """{
+                "error": "Bad Request",
+                "message": qo.error,
+                "status": 400
+            }""""
+        )
+    }
+
     def time(): String = {
         ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"))
     }
@@ -31,9 +40,9 @@ object FormatManager {
         }
     }
 
-    def resourceAsBundle(qol: List[QueryOutput]): Unit = ???
+    def resourcesAsBundle(qol: List[QueryOutput]): Unit = ???
         
-    def resourcesAsBundle(qo: QueryOutput, requestType: String = "batch",
+    def resourceAsBundle(qo: QueryOutput, requestType: String = "batch",
     columns: Option[List[String]] = None): String = {
         columns match {
             case Some(c) => ???
