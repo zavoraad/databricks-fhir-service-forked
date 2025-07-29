@@ -26,6 +26,10 @@ class QueryInterpreter(val catalog: String, val schema: String, val predicateAli
     catalog + "." + schema + "." + resource +
     " WHERE " + predicateAlias.translate("id") + " = '" + id + "'".stripMargin
   }
+
+  def search(resource: String, params: Map[String, String]): String = {
+    ???
+  }
 }
 
 
