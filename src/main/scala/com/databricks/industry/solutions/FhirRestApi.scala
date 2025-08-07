@@ -26,8 +26,14 @@ trait FhirService {
 //        Class.forName("com.databricks.industry.solutions.fhirapi." + config.getString("databricks.warehouse.class"))(
 //          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
 //        )
-        PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
-          conRetries = 2, queryRetries = 2)
+        PoolDataStore(
+        TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
+        conRetries = 2,
+        queryRetries = 2,
+        minIdle = config.getInt("databricks.pool.minIdle"),
+        maxPoolSize = config.getInt("databricks.pool.maxPoolSize")
+      )
+
 //SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
       )
     )
@@ -64,6 +70,15 @@ trait FhirService {
         },
         pathPrefix("fhir") {
           concat(
+            // Existing logic for /fhir/{resourceType}/{id}/$everything
+            pathPrefix("Patient" / Segment / "$everything") { patientId =>
+              get {
+                extractUri { uri =>
+                  val result = service.getEverything(patientId)
+                  complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
+                }
+              }
+            },
             pathPrefix(Segment) { typeSeg =>
               pathPrefix(Segment) { idSeg =>
                 get {
@@ -74,7 +89,7 @@ trait FhirService {
                 }
               }
             },
-            pathPrefix("_search"){
+            pathPrefix("_search") {
               complete("_search endpoint")
             }
           )
@@ -91,4 +106,9 @@ object FhirService extends App with FhirService {
   override val config = ConfigFactory.load()
 
   Http().newServerAt(config.getString("http.interface"), config.getInt("http.port")).bindFlow(routes)
+
+  sys.addShutdownHook {
+    logger.info("Shutting down — closing connection pool.")
+    service.qr.ds.disconnect
+  }
 }
