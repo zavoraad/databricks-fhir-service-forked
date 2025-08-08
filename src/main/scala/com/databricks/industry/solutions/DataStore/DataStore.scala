@@ -21,7 +21,6 @@ trait DataStore{
           }.toMap
         }
       }
-      statement.close
       (it.toList, None)
     }catch{
       case r if retries > 0 => execute(query, retries-1, con)
