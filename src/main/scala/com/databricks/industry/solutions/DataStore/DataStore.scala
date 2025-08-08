@@ -9,9 +9,9 @@ trait DataStore{
 
   //Return a paged search
   //https://build.fhir.org/http.html#search
-  def executeSearch(query: String, retries: Int, con: Connection): (Iterator[Map[String, String]], Option[String]) = {
+  def execute(query: String, retries: Int, con: Connection):  (List[Map[String, String]], Option[String])  = {
+    val statement = con.createStatement
     try{
-      val statement = con.createStatement
       val resultSet = statement.executeQuery(query)
       val it = new Iterator[Map[String, String]] {
         def hasNext: Boolean = resultSet.next() // Check if there are more rows
@@ -21,17 +21,16 @@ trait DataStore{
           }.toMap
         }
       }
-      (it, None)
+      statement.close
+      (it.toList, None)
     }catch{
-      case r if retries > 0 => executeSearch(query, retries-1, con)
+      case r if retries > 0 => execute(query, retries-1, con)
       case e: Exception =>
-            (Iterator[Map[String, String]](), Some(e.toString))
+            (Nil, Some(e.toString))
     }
-  }
-
-  def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
-    val s = executeSearch(query, retries,con)
-    (s._1.toList, s._2)
+    finally {
+      statement.close
+    }
   }
 
   protected def connect: Connection //internal class connection handling

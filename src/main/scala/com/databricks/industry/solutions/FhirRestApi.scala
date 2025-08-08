@@ -58,17 +58,24 @@ trait FhirService {
             complete(service.qr.ds.getConnection.toString)
           }
         },
+        //main entry point https://build.fhir.org/http.html
         pathPrefix("fhir") {
           concat(
             pathPrefix(Segment) { typeSeg =>
-              pathPrefix(Segment) { idSeg =>
-                get {
-                  extractUri { uri =>
-                    val result = service.read(typeSeg, idSeg, uri.query().toMap)
-                    complete(result.bundle)
+              concat(
+                pathPrefix(Segment) { idSeg => 
+                  get {  //read https://build.fhir.org/http.html#read
+                   extractUri { uri =>
+                     val result = service.read(typeSeg, idSeg, uri.query().toMap)
+                     complete(result.bundle)
+                    }
                   }
+                },
+                 //create https://build.fhir.org/http.html#create
+                post {
+                  complete("TODO")
                 }
-              }
+            )
             },
             pathPrefix("_search"){
               complete("_search endpoint")

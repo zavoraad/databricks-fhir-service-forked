@@ -4,8 +4,11 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import scala.collection.immutable.List
 import ujson.Obj
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 
-case class FormattedOutput(queryOutput: QueryOutput, bundle: String)
+
+//TODO Update HTTP Response to be the response code applied to the result
+case class FormattedOutput(queryOutput: QueryOutput, bundle: String, response: StatusCode = StatusCodes.OK)
 
 object FormatManager {
 
