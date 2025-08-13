@@ -61,6 +61,15 @@ trait FhirService {
         //main entry point https://build.fhir.org/http.html
         pathPrefix("fhir") {
           concat(
+            // Existing logic for /fhir/{resourceType}/{id}/$everything
+            pathPrefix("Patient" / Segment / "$everything") { patientId =>
+              get {
+                extractUri { uri =>
+                  val result = service.getEverything(patientId)
+                  complete(result.bundle)
+                }
+              }
+            },
             pathPrefix(Segment) { typeSeg =>
               concat(
                 pathPrefix(Segment) { idSeg => 

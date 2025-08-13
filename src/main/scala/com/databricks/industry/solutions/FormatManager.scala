@@ -6,7 +6,6 @@ import scala.collection.immutable.List
 import ujson.Obj
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 
-
 //TODO Update HTTP Response to be the response code applied to the result
 case class FormattedOutput(queryOutput: QueryOutput, bundle: String, response: StatusCode = StatusCodes.OK)
 
@@ -43,17 +42,33 @@ object FormatManager {
         }
     }
 
-    def resourcesAsBundle(qol: List[QueryOutput]): Unit = ???
+    def resourcesAsBundle(qol: List[QueryOutput], columns: Option[List[String]] = None): String = {
+        qol.map(qo => resourcesAsEntry(qo, columns)).mkString("")
+    }
         
-    def resourceAsBundle(qo: QueryOutput, requestType: String = "batch",
-    columns: Option[List[String]] = None): String = {
+    /* 
+        This method should only be called by this class as it does not 
+        construct the wrapped data needed for a bundle 
+     */
+    
+    def resourcesAsEntry(qo: QueryOutput, columns: Option[List[String]] = None): Seq[Obj] = {
         columns match {
             case Some(c) => ???
-            case None => {
-                ???
+            case None => { //builds entry
+                qo.queryResults.flatMap(t => 
+                    t.values
+                        .filter(s => s.length > 0)
+                        .map(s => ujson.read(s))
+                        .map(j => Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("id").value}))
+                )
             }
         }
     }
+
+    def entryAsBundle(entry: Seq[Obj], requestType: String = "batch"): String = {
+        ujson.write(Obj("resourceType" -> "Bundle", "type" -> requestType, "entry" -> entry.toList))
+    }
+
 
 
     def fromQueryOutputSearch(queryOutput: QueryOutput): FormattedOutput = {
