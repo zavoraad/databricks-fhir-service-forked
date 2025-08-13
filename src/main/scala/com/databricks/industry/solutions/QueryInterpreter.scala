@@ -2,6 +2,7 @@ package com.databricks.industry.solutions.fhirapi
 
 import com.typesafe.config.Config
 import scala.jdk.CollectionConverters._
+import com.databricks.client.jdbc.internal.fasterxml.jackson.databind.deser.ValueInstantiator.Base
 
 
 object QueryInterpreter {
@@ -19,7 +20,7 @@ object QueryInterpreter {
   }
 }
 
-class QueryInterpreter(val catalog: String, val schema: String, val predicateAlias: Alias) {
+class QueryInterpreter(val catalog: String, val schema: String, val predicateAlias: Alias = BaseAlias.empty()) {
   
   def read(resource: String, id: String, params: Map[String, String]): String = {
     "SELECT to_json(struct(" + QueryInterpreter.paramsToSelect(params, resource) + ")) AS " + resource + " FROM " + 
@@ -36,11 +37,10 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
   }
 
   def readEverythingForPatient(patientId: String): Seq[String] = {
-    val ref = s"'Patient/$patientId'"
     Seq(
-      s"SELECT to_json(struct(*)) AS Patient FROM $catalog.$schema.Patient WHERE fhir_id = '$patientId'",
-      s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = $ref",
-      s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = $ref"
+      s"SELECT to_json(struct(*)) AS Patient FROM $catalog.$schema.Patient WHERE id = '$patientId'",
+      s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = 'urn:uuid:' || '$patientId'",
+      s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = 'urn:uuid:' || '$patientId'"
     )
   }
 }
@@ -73,6 +73,8 @@ object BaseAlias{
       case false => BaseAlias(None)
     }
   }
+
+  def empty(): Alias = BaseAlias(None)
 
   /* 
     Specific config to a key/value pair of aliases

@@ -62,7 +62,7 @@ trait FhirService {
         pathPrefix("fhir") {
           concat(
             // Existing logic for /fhir/{resourceType}/{id}/$everything
-            pathPrefix("Patient" / Segment / "$everything") { patientId =>
+            pathPrefix("patient" / Segment / "$everything") { patientId =>
               get {
                 extractUri { uri =>
                   val result = service.getEverything(patientId)

@@ -30,21 +30,18 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
       }
     }
 
+    /*
     val allResultsFuture: Future[List[Map[String, String]]] = Future.sequence(futures).map { outputs =>
       outputs.flatMap(_.queryResults).toList
     }
+    */
+    val allResultsFuture: Future[Seq[QueryOutput]] = Future.sequence(futures).map { outputs =>
+      outputs
+    }
 
-    val results: List[Map[String, String]] = Await.result(allResultsFuture, 10.seconds)
-
-    val combinedOutput = QueryOutput(
-      queryResults = results,
-      queryRuntime = 0L,
-      queryStartTime = org.joda.time.DateTime.now(),
-      error = None,
-      queryInput = "Multiple queries for $everything"
-    )
-    //FormattedOutput.resourceAsNDJSON(combinedOutput)
-    ???
+    val results: Seq[QueryOutput] = Await.result(allResultsFuture, 10.seconds)
+    //TODO fix this below, need to allow multiple queries 
+    FormattedOutput(results(0), FormatManager.resourcesAsBundle(results))
   }
 
   //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged

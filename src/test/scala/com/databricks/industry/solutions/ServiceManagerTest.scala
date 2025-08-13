@@ -2,7 +2,7 @@ package com.databricks.industry.solutions.fhirapi
 
 import org.joda.time.DateTime
 
-class ServiceManager extends BaseTest {
+class ServiceManagerTest extends BaseTest {
 
   test("Test Error Handling in get request") {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""

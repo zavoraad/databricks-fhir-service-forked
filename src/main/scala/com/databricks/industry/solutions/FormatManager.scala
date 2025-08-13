@@ -42,7 +42,7 @@ object FormatManager {
         }
     }
 
-    def resourcesAsBundle(qol: List[QueryOutput], columns: Option[List[String]] = None): String = {
+    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[List[String]] = None): String = {
         qol.map(qo => resourcesAsEntry(qo, columns)).mkString("")
     }
         
