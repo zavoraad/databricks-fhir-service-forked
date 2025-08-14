@@ -61,12 +61,21 @@ class FormatManagerSuite extends BaseTest {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
     val resourceObj = ujson.read(fhirResourceJson)
     val entry = Seq(ujson.Obj("resource" -> resourceObj, "fullUrl" -> "urn:uuid:1"))
+    val queryResults = List(Map("Patient" -> fhirResourceJson))
 
-    val result = FormatManager.entryAsBundle(entry)
+    val qo = QueryOutput(
+      queryResults = queryResults,
+      queryRuntime = 100,
+      queryStartTime = DateTime.now(),
+      error = None,
+      queryInput = "SELECT * FROM patients WHERE id = '1'"
+    )
+
+    val result = FormatManager.resourcesAsBundle(Seq(qo),transactionType="searchsets" )
     val resultJson = ujson.read(result)
 
     assert(resultJson("resourceType").str == "Bundle")
-    assert(resultJson("type").str == "batch")
+    assert(resultJson("type").str == "searchsets")
     assert(resultJson("entry").arr.length == 1)
     assert(resultJson("entry")(0) == entry.head)
   }

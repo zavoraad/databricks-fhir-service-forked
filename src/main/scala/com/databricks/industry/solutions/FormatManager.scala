@@ -42,8 +42,12 @@ object FormatManager {
         }
     }
 
-    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[List[String]] = None): String = {
-        qol.map(qo => resourcesAsEntry(qo, columns)).mkString("")
+    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[List[String]] = None, transactionType: String = "searchset"): String = {
+        ujson.write(
+            Obj("resourceType" -> "Bundle",
+                "type" -> transactionType,
+                "entry" -> qol.flatMap(qo => resourcesAsEntry(qo, columns)))
+        )
     }
         
     /* 
@@ -64,11 +68,6 @@ object FormatManager {
             }
         }
     }
-
-    def entryAsBundle(entry: Seq[Obj], requestType: String = "batch"): String = {
-        ujson.write(Obj("resourceType" -> "Bundle", "type" -> requestType, "entry" -> entry.toList))
-    }
-
 
 
     def fromQueryOutputSearch(queryOutput: QueryOutput): FormattedOutput = {
