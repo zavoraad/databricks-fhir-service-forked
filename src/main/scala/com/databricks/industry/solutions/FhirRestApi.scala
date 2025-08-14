@@ -66,7 +66,7 @@ trait FhirService {
               get {
                 extractUri { uri =>
                   val result = service.getEverything(patientId)
-                  complete(result.bundle)
+                  complete(result.statusCd, result.data)
                 }
               }
             },
@@ -76,13 +76,14 @@ trait FhirService {
                   get {  //read https://build.fhir.org/http.html#read
                    extractUri { uri =>
                      val result = service.read(typeSeg, idSeg, uri.query().toMap)
-                     complete(result.bundle)
+                     complete(result.statusCd, result.data)
                     }
                   }
                 },
                  //create https://build.fhir.org/http.html#create
                 post {
-                  complete("TODO")
+                  
+                  ???
                 }
             )
             },

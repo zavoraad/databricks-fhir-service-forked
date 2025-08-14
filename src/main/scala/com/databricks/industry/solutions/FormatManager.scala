@@ -7,12 +7,12 @@ import ujson.Obj
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 
 //TODO Update HTTP Response to be the response code applied to the result
-case class FormattedOutput(queryOutput: QueryOutput, bundle: String, response: StatusCode = StatusCodes.OK)
+case class FormattedOutput(queryOutput: Seq[QueryOutput], data: String, statusCd: StatusCode = StatusCodes.OK)
 
 object FormatManager {
 
     def ErrorDefault(qo: QueryOutput): FormattedOutput = {
-        FormattedOutput(qo, """{
+        FormattedOutput(Seq(qo), """{
                 "error": "Bad Request",
                 "message": """ + qo.error + """",
                 "status": 400
@@ -71,7 +71,7 @@ object FormatManager {
 
 
     def fromQueryOutputSearch(queryOutput: QueryOutput): FormattedOutput = {
-        FormattedOutput(queryOutput,
+        FormattedOutput(Seq(queryOutput),
         """{"resourceType": "Bundle","type":"searchset","entry":[
         """ +
             queryOutput.queryResults.flatMap(x => {
