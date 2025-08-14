@@ -11,7 +11,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
     val result = qr.runQuery(QueryInput(sql))
     result.error match {
       case Some(x) => FormatManager.ErrorDefault(result)
-      case None =>FormattedOutput(result, FormatManager.resourceAsNDJSON(result))
+      case None =>FormattedOutput(Seq(result), FormatManager.resourceAsNDJSON(result))
     }    
   }
 
@@ -30,18 +30,13 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
       }
     }
 
-    /*
-    val allResultsFuture: Future[List[Map[String, String]]] = Future.sequence(futures).map { outputs =>
-      outputs.flatMap(_.queryResults).toList
-    }
-    */
     val allResultsFuture: Future[Seq[QueryOutput]] = Future.sequence(futures).map { outputs =>
       outputs
     }
 
-    val results: Seq[QueryOutput] = Await.result(allResultsFuture, 10.seconds)
+    val results: Seq[QueryOutput] = Await.result(allResultsFuture, 100.seconds)
     //TODO fix this below, need to allow multiple queries 
-    FormattedOutput(results(0), FormatManager.resourcesAsBundle(results))
+    FormattedOutput(results, FormatManager.resourcesAsBundle(results))
   }
 
   //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged
