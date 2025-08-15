@@ -18,7 +18,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
   def insert(typeSeg: String, idSeg: String, uri: Map[String,String], payload: String): FormattedOutput = {
     ???
   }
-
+ /*
   def getEverythingFutures(patientId: String): FormattedOutput = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -38,6 +38,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
     //TODO fix this below, need to allow multiple queries 
     FormattedOutput(results, FormatManager.resourcesAsBundle(results))
   }
+  */
 
   def getEverything(patientId: String): FormattedOutput = {
 

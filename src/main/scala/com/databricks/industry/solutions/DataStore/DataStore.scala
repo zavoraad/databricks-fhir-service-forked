@@ -7,28 +7,28 @@ trait DataStore{
   val conRetries: Int
   val queryRetries: Int
 
-  //Return a paged search
   //https://build.fhir.org/http.html#search
-  def execute(query: String, retries: Int, con: Connection):  (List[Map[String, String]], Option[String])  = {
+  def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
     val statement = con.createStatement
-    try{
-      val resultSet = statement.executeQuery(query)
+    val resultSet = statement.executeQuery(query)
+    try {
       val it = new Iterator[Map[String, String]] {
         def hasNext: Boolean = resultSet.next() // Check if there are more rows
         def next(): Map[String, String] = {
-          (1 to resultSet.getMetaData.getColumnCount).map{ i =>
+          (1 to resultSet.getMetaData.getColumnCount).map { i =>
             resultSet.getMetaData.getColumnName(i) -> resultSet.getString(i)
           }.toMap
         }
       }
       (it.toList, None)
-    }catch{
-      case r if retries > 0 => execute(query, retries-1, con)
+    } catch {
+      case r if retries > 0 => execute(query, retries - 1, con)
       case e: Exception =>
-            (Nil, Some(e.toString))
-    }
-    finally {
-      statement.close
+        (Nil, Some(e.toString))
+    } finally {
+      if (resultSet != null) resultSet.close
+      if (statement != null) statement.close
+      if (con != null) con.close
     }
   }
 
