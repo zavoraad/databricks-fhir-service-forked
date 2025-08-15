@@ -5,6 +5,30 @@ import java.sql.Connection
 
 class PoolDataStore(val auth: Auth, val conRetries: Int=1, val queryRetries: Int =1, val minIdle: Int=1, val maxPoolSize: Int = -1)  extends DataStore{
 
+
+  override def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
+    val statement = con.createStatement
+    val resultSet = statement.executeQuery(query)
+    try {
+      val it = new Iterator[Map[String, String]] {
+        def hasNext: Boolean = resultSet.next() // Check if there are more rows
+        def next(): Map[String, String] = {
+          (1 to resultSet.getMetaData.getColumnCount).map { i =>
+            resultSet.getMetaData.getColumnName(i) -> resultSet.getString(i)
+          }.toMap
+        }
+      }
+      (it.toList, None)
+    } catch {
+      case r if retries > 0 => execute(query, retries - 1, con)
+      case e: Exception =>
+        (Nil, Some(e.toString))
+    } finally {
+      if (resultSet != null) resultSet.close
+      if (statement != null) statement.close
+      if (con != null) con.close
+    }
+  }
   private val authConfig = new HikariConfig()
   authConfig.setMinimumIdle(minIdle)
   maxPoolSize match {

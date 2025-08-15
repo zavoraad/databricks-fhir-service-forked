@@ -45,7 +45,8 @@ libraryDependencies ++= {
 run / fork := true
 run / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
 reStart / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
-
+Test / fork := true
+Test / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension
