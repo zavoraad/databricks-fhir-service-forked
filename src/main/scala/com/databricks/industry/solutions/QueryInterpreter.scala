@@ -38,9 +38,11 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
 
   def readEverythingForPatient(patientId: String): Seq[String] = {
     Seq(
-      s"SELECT to_json(struct(*)) AS Patient FROM $catalog.$schema.Patient WHERE id = '$patientId'",
-      s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = 'urn:uuid:' || '$patientId'",
-      s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = 'urn:uuid:' || '$patientId'"
+      s"SELECT to_json(struct(*)) AS Patient FROM $catalog.$schema.Patient WHERE id = '$patientId'", //TODO prefix this
+      s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = 'Patient/' || '$patientId'",
+      s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = 'Patient/' || '$patientId'"
+      //s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = 'urn:uuid:' || '$patientId'",
+      //s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = 'urn:uuid:' || '$patientId'"
     )
   }
 }

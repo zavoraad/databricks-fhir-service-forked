@@ -19,7 +19,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
     ???
   }
 
-  def getEverything(patientId: String): FormattedOutput = {
+  def getEverythingFutures(patientId: String): FormattedOutput = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
     val queries = qi.readEverythingForPatient(patientId)
@@ -36,6 +36,16 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
 
     val results: Seq[QueryOutput] = Await.result(allResultsFuture, 100.seconds)
     //TODO fix this below, need to allow multiple queries 
+    FormattedOutput(results, FormatManager.resourcesAsBundle(results))
+  }
+
+  def getEverything(patientId: String): FormattedOutput = {
+
+     val results = qi.readEverythingForPatient(patientId).map { query =>
+        qr.runQuery(QueryInput(query))
+      }
+
+    //TODO fix this below, need to allow multiple queries, allow multiple in parallel
     FormattedOutput(results, FormatManager.resourcesAsBundle(results))
   }
 
@@ -59,3 +69,8 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
 
   
 }
+
+
+/* 
+reference: "Patient/de21500ed1025bf65c1b8033ec8ccae8f8f9f29f95f3b2ec2d9b311f60d72ef1"
+ */
