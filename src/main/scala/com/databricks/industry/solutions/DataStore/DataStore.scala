@@ -28,7 +28,6 @@ trait DataStore{
     } finally {
       if (resultSet != null) resultSet.close
       if (statement != null) statement.close
-      if (con != null) con.close
     }
   }
 
