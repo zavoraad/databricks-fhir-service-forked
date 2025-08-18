@@ -3,51 +3,31 @@ package com.databricks.industry.solutions.fhirapi
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+import akka.http.scaladsl.model.Uri
 
 class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
 
-  def read(typeSeg: String, idSeg: String, uri: Map[String, String]): FormattedOutput = {
-    val sql = qi.read(typeSeg, idSeg, uri)
-    val result = qr.runQuery(QueryInput(sql))
+  def read(typeSeg: String, idSeg: String)(implicit url: Uri): FormattedOutput = {
+    val sql = qi.read(typeSeg, idSeg, url.query().toMap)
+    val result = qr.runQuery(QueryInput(sql, url))
     result.error match {
       case Some(x) => FormatManager.ErrorDefault(result)
       case None =>FormattedOutput(Seq(result), FormatManager.resourceAsNDJSON(result))
     }    
   }
 
-  def insert(typeSeg: String, idSeg: String, uri: Map[String,String], payload: String): FormattedOutput = {
+  def insert(typeSeg: String, idSeg: String, payload: String)(implicit url: Uri): FormattedOutput = {
     ???
   }
- /*
-  def getEverythingFutures(patientId: String): FormattedOutput = {
-    import scala.concurrent.ExecutionContext.Implicits.global
 
-    val queries = qi.readEverythingForPatient(patientId)
-
-    val futures: Seq[Future[QueryOutput]] = queries.map { query =>
-      Future {
-        qr.runQuery(QueryInput(query))
-      }
-    }
-
-    val allResultsFuture: Future[Seq[QueryOutput]] = Future.sequence(futures).map { outputs =>
-      outputs
-    }
-
-    val results: Seq[QueryOutput] = Await.result(allResultsFuture, 100.seconds)
-    //TODO fix this below, need to allow multiple queries 
-    FormattedOutput(results, FormatManager.resourcesAsBundle(results))
-  }
-  */
-
-  def getEverything(patientId: String): FormattedOutput = {
+  def getEverything(patientId: String)(implicit url: Uri): FormattedOutput = {
 
      val results = qi.readEverythingForPatient(patientId).map { query =>
-        qr.runQuery(QueryInput(query))
+        qr.runQuery(QueryInput(query, url))
       }
 
-    //TODO fix this below, need to allow multiple queries, allow multiple in parallel
-    FormattedOutput(results, FormatManager.resourcesAsBundle(results))
+      //TODO fix this below, need to allow multiple queries, allow multiple in parallel
+      FormattedOutput(results, FormatManager.resourcesAsBundle(results))
   }
 
   //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged

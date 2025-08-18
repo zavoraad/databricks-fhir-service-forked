@@ -44,7 +44,7 @@ libraryDependencies ++= {
 
 run / fork := true
 run / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
-reStart / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
+reStart / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
 Test / fork := true
 Test / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
 
