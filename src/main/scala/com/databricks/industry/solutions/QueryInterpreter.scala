@@ -52,8 +52,7 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
   def paramsToWhere(params: Map[String, String]): String = {
     params match {
       case x if x.isEmpty => ""
-      case _ => print("PARAMS DEBUG " + sqlAlias.toString + "\n" +params.map(p => sqlAlias.translate(p(0)) + " = \"" + p(1) + "\"").mkString(" AND " ))
-        " WHERE " + params.map(p => sqlAlias.translate(p(0)) + " = \"" + p(1) + "\"").mkString(" AND " )
+      case _ =>  " WHERE " + params.map(p => sqlAlias.translate(p(0)) + " = \"" + p(1) + "\"").mkString(" AND " )
     }
   }
 }
