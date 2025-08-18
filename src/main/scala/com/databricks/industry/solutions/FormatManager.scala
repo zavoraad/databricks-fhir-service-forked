@@ -68,20 +68,4 @@ object FormatManager {
             }
         }
     }
-
-
-    def fromQueryOutputSearch(queryOutput: QueryOutput): FormattedOutput = {
-        FormattedOutput(Seq(queryOutput),
-        """{"resourceType": "Bundle","type":"searchset","entry":[
-        """ +
-            queryOutput.queryResults.flatMap(x => {
-                x.map { case (key, value) =>
-                val j = ujson.read(value)
-                j("resourceType") = key 
-                Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("fhir_id").value})
-            }
-            }).mkString(",") +
-            """]}"""
-        )
-    }
 }
