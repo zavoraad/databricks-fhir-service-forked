@@ -1,7 +1,5 @@
 package com.databricks.industry.solutions.fhirapi
 
-import com.typesafe.config.Config
-import scala.jdk.CollectionConverters._
 import com.databricks.client.jdbc.internal.fasterxml.jackson.databind.deser.ValueInstantiator.Base
 
 
@@ -20,12 +18,15 @@ object QueryInterpreter {
   }
 }
 
-class QueryInterpreter(val catalog: String, val schema: String, val predicateAlias: Alias = BaseAlias.empty()) {
+class QueryInterpreter(val catalog: String, 
+  val schema: String, 
+  val sqlAlias: Alias = BaseAlias.empty(),
+  val dollarEverything: Alias = BaseAlias.empty()) {
   
   def read(resource: String, id: String, params: Map[String, String]): String = {
     "SELECT to_json(struct(" + QueryInterpreter.paramsToSelect(params, resource) + ")) AS " + resource + " FROM " + 
     catalog + "." + schema + "." + resource +
-    " WHERE " + predicateAlias.translate("id") + " = '" + id + "'".stripMargin
+    " WHERE " + sqlAlias.translate("id") + " = '" + id + "'".stripMargin
   }
 
 /* 
@@ -33,56 +34,26 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
   Array(params['onset', '23.May.2009'])
  */
   def search(resource: String, params: Map[String, String]): String = {
-    ???
+    "SELECT to_json(struct(" + QueryInterpreter.paramsToSelect(params, resource) + ")) AS " + resource + " FROM " + 
+    catalog + "." + schema + "." + resource + 
+    paramsToWhere(params)
   }
 
   def readEverythingForPatient(patientId: String): Seq[String] = {
     Seq(
-      s"SELECT to_json(struct(*)) AS Patient FROM $catalog.$schema.Patient WHERE id = '$patientId'", //TODO prefix this
-      s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = 'Patient/' || '$patientId'",
-      s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = 'Patient/' || '$patientId'"
-      //s"SELECT to_json(struct(*)) AS Encounter FROM $catalog.$schema.Encounter WHERE subject.reference = 'urn:uuid:' || '$patientId'",
-      //s"SELECT to_json(struct(*)) AS Observation FROM $catalog.$schema.Observation WHERE subject.reference = 'urn:uuid:' || '$patientId'"
+      read("Patient", patientId, Map.empty[String,String]) 
+      ,search("Encounter", Map("subject" -> {dollarEverything.translate("prefix") + patientId}))
+      ,search("Observation", Map("subject" -> {dollarEverything.translate("prefix")  + patientId}))
     )
   }
-}
-
-
-//Allow aliases on table names or predicates 
-//enum Translation: 
-//  case WherePredicate, Table, SelectPredicate
-
-trait Alias{
-  def translate(s:String): String
-  val a: Option[Map[String, String]]
-}
-
-class BaseAlias(val a: Option[Map[String, String]] = None) extends Alias{
-
-    override def translate(s: String): String = {
-     a match {
-      case None => s
-      case Some(x) => x.getOrElse(s,s)
-    }
-  }
-}
-
-//Load aliases from a config object
-object BaseAlias{
-  def fromConfig(config: Config, path: String): Alias = {
-    config.hasPath(path) match{
-      case true => new BaseAlias(Some(configToMap(config.getConfig(path))))
-      case false => BaseAlias(None)
-    }
-  }
-
-  def empty(): Alias = BaseAlias(None)
-
   /* 
-    Specific config to a key/value pair of aliases
+    build the where clause for any query
    */
-  def configToMap(config: Config): Map[String, String] = {
-    config.root().asScala.map{ case (key, value) => key -> value.unwrapped().toString}.toMap
+  def paramsToWhere(params: Map[String, String]): String = {
+    params match {
+      case x if x.isEmpty => ""
+      case _ => print("PARAMS DEBUG " + sqlAlias.toString + "\n" +params.map(p => sqlAlias.translate(p(0)) + " = \"" + p(1) + "\"").mkString(" AND " ))
+        " WHERE " + params.map(p => sqlAlias.translate(p(0)) + " = \"" + p(1) + "\"").mkString(" AND " )
+    }
   }
 }
-

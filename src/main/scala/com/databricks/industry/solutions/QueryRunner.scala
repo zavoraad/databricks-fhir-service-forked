@@ -4,6 +4,7 @@ import java.sql.Connection
 import org.joda.time.DateTime
 import java.util.{Date, UUID}
 import ujson.Obj
+import akka.http.scaladsl.model.Uri
 
 
 class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
@@ -14,7 +15,7 @@ class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
   }
 }
 
-case class QueryInput(query: String)
+case class QueryInput(query: String, url: Uri)
 
 case class QueryOutput(
   queryResults: List[Map[String, String]], //rows of column name, value results

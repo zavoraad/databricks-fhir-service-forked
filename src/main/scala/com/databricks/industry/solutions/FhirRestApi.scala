@@ -21,7 +21,10 @@ trait FhirService {
 
   lazy val service = {
     ServiceManager(
-      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema"),  BaseAlias.fromConfig(config, "databricks.alias.wherepredicate")),
+      QueryInterpreter(config.getString("databricks.data.catalog"), 
+      config.getString("databricks.data.schema"),  
+      BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate"),
+      BaseAlias.fromConfig(config, "databricks.alias.dollareverything")),
       new QueryRunner(
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
           conRetries = 2, queryRetries = 2)
@@ -37,7 +40,7 @@ trait FhirService {
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
-                  val result = service.read(typeSeg, idSeg, (uri.query().toMap))
+                  val result = service.read(typeSeg, idSeg)(uri)
                   complete{ result.queryOutput.toString  }
                 }
               }
@@ -65,7 +68,7 @@ trait FhirService {
             pathPrefix("patient" / Segment / "$everything") { patientId =>
               get {
                 extractUri { uri =>
-                  val result = service.getEverything(patientId)
+                  val result = service.getEverything(patientId)(uri)
                   complete(result.statusCd, result.data)
                 }
               }
@@ -75,14 +78,14 @@ trait FhirService {
                 pathPrefix(Segment) { idSeg => 
                   get {  //read https://build.fhir.org/http.html#read
                    extractUri { uri =>
-                     val result = service.read(typeSeg, idSeg, uri.query().toMap)
+                     val result = service.read(typeSeg, idSeg)(uri)
                      complete(result.statusCd, result.data)
                     }
                   }
                 },
                  //create https://build.fhir.org/http.html#create
                 post {
-                  
+
                   ???
                 }
             )
