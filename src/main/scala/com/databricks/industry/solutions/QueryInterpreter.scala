@@ -48,6 +48,8 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
   }
   /* 
     build the where clause for any query
+    Encounter/?subject=123
+      - params Map("subject" -> "123")
    */
   def paramsToWhere(params: Map[String, String]): String = {
     params match {
