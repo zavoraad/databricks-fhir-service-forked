@@ -31,22 +31,25 @@ object FormatManager {
     /*
         turn queryResults into ndjson
      */
-    def resourceAsNDJSON(qo: QueryOutput, columns: Option[List[String]] = None): String = {
+    def resourceAsNDJSON(qo: QueryOutput, columns: Option[List[String]] = None, sqlAlias: Option[BaseAlias] = None): String = {
         columns match {
             case Some(c)  => ???
             case None => {
                 qo.queryResults.flatMap(t => 
-                    t.values.filter(s => s.length > 0).map(x => ujson.read(x))
+                    t.values
+                    .filter(s => s.length > 0)
+                    .map(x => ujson.read(x))
+                    .map(j => ujsonWithAlias(j, sqlAlias))
                 ).mkString("\n")
             }
         }
     }
 
-    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[List[String]] = None, transactionType: String = "searchset"): String = {
+    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[List[String]] = None, transactionType: String = "searchset", sqlAlias: Option[BaseAlias] = None): String = {
         ujson.write(
             Obj("resourceType" -> "Bundle",
                 "type" -> transactionType,
-                "entry" -> qol.flatMap(qo => resourcesAsEntry(qo, columns)))
+                "entry" -> qol.flatMap(qo => resourcesAsEntry(qo, columns, sqlAlias)))
         )
     }
         
@@ -55,7 +58,7 @@ object FormatManager {
         construct the wrapped data needed for a bundle 
      */
     
-    def resourcesAsEntry(qo: QueryOutput, columns: Option[List[String]] = None): Seq[Obj] = {
+    def resourcesAsEntry(qo: QueryOutput, columns: Option[List[String]] = None, sqlAlias: Option[BaseAlias] = None): Seq[Obj] = {
         columns match {
             case Some(c) => ???
             case None => { //builds entry
@@ -63,9 +66,34 @@ object FormatManager {
                     t.values
                         .filter(s => s.length > 0)
                         .map(s => ujson.read(s))
+                        .map(j => ujsonWithAlias(j, sqlAlias))
                         .map(j => Obj("resource" -> j, "fullUrl" -> {"urn:uuid:" + j("id").value}))
                 )
             }
         }
+    }
+    /* 
+        Updates j as a side effect
+     */
+    def ujsonWithAlias(j: ujson.Value, sqlAlias: Option[BaseAlias] = None): ujson.Obj = {
+        sqlAlias match {
+            case None => j
+            case Some(x) => {
+                x.a match {
+                    case Some(m) => {
+                        m.map(y => 
+                        j.obj.contains(y(0)) match {
+                            case true => {
+                                j(y(1)) = j(y(0))
+                                j.obj.remove(y(0))
+                            }
+                            case _ => {}
+                        })
+                    }
+                    case _ => {}
+                }
+            }
+        }
+        j.obj
     }
 }

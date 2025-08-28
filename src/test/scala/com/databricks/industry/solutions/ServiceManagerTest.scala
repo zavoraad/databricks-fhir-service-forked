@@ -21,4 +21,55 @@ class ServiceManagerTest extends BaseTest {
     assert(result == expected)
   }
 
+  test("Test sqlAlias Functions"){
+    val fhirResourceJson = """{"resourceType": "Patient", "id": "123", "active": true}"""
+    val queryResults = List(Map("Patient" -> fhirResourceJson))
+    val qo = QueryOutput(
+      queryResults = queryResults,
+      queryRuntime = 50,
+      queryStartTime = DateTime.now(),
+      error = None,
+      queryInput = "SELECT * FROM patients"
+    )
+
+    // Create an alias to rename "id" to "patientId"
+    val aliasMap = Map("id" -> "patientId")
+    val sqlAlias = new BaseAlias(Some(aliasMap))
+
+    // Call the function with the alias
+    val result = FormatManager.resourceAsNDJSON(qo, sqlAlias = Some(sqlAlias))
+
+    // Verify that the key has been renamed
+    val expected = """{"resourceType":"Patient","active":true,"patientId":"123"}"""
+    assert(result == expected)
+  }
+
+  test("Test resourcesAsBundle with sqlAlias") {
+    val fhirResourceJson = """{"resourceType": "Patient", "id": "123", "active": true}"""
+    val queryResults = List(Map("Patient" -> fhirResourceJson))
+    val qo = QueryOutput(
+      queryResults = queryResults,
+      queryRuntime = 50,
+      queryStartTime = DateTime.now(),
+      error = None,
+      queryInput = "SELECT * FROM patients"
+    )
+
+    // Create an alias to rename "active" to "isActive"
+    val aliasMap = Map("active" -> "isActive")
+    val sqlAlias = new BaseAlias(Some(aliasMap))
+
+    // Call the function with the alias
+    val resultString = FormatManager.resourcesAsBundle(Seq(qo), sqlAlias = Some(sqlAlias))
+
+    // Parse the result and verify the content
+    val resultJson = ujson.read(resultString)
+    val resource = resultJson("entry").arr.head("resource")
+
+    assert(resource("resourceType").str == "Patient")
+    assert(resource("isActive").bool == true) // Check for the new aliased key
+    assert(!resource.obj.contains("active")) // Check that the old key is removed
+    assert(resultJson("entry").arr.head("fullUrl").str == "urn:uuid:123")
+  }
+
 } 

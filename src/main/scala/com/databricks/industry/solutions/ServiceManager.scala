@@ -5,14 +5,14 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import akka.http.scaladsl.model.Uri
 
-class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
+class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Option[BaseAlias] = None) {
 
   def read(typeSeg: String, idSeg: String)(implicit url: Uri): FormattedOutput = {
     val sql = qi.read(typeSeg, idSeg, url.query().toMap)
     val result = qr.runQuery(QueryInput(sql, url))
     result.error match {
       case Some(x) => FormatManager.ErrorDefault(result)
-      case None =>FormattedOutput(Seq(result), FormatManager.resourceAsNDJSON(result))
+      case None =>FormattedOutput(Seq(result), FormatManager.resourceAsNDJSON(result, None, sqlAlias))
     }    
   }
 
@@ -27,7 +27,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner) {
       }
 
       //TODO fix this below, need to allow multiple queries, allow multiple in parallel
-      FormattedOutput(results, FormatManager.resourcesAsBundle(results))
+      FormattedOutput(results, FormatManager.resourcesAsBundle(results, sqlAlias=sqlAlias))
   }
 
   //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged
