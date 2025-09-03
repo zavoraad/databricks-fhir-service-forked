@@ -4,6 +4,8 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import akka.http.scaladsl.model.Uri
+import akka.event.{LoggingAdapter,Logging}
+
 
 class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Option[BaseAlias] = None) {
 
@@ -11,8 +13,9 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
     val sql = qi.read(typeSeg, idSeg, url.query().toMap)
     val result = qr.runQuery(QueryInput(sql, url))
     result.error match {
-      case Some(x) => FormatManager.ErrorDefault(result)
-      case None =>FormattedOutput(Seq(result), FormatManager.resourceAsNDJSON(result, None, sqlAlias))
+      case Some(x) => FormatManager.ErrorDefault(Seq(result))
+      case None => FormatManager.fromResultsNDJson(Seq(result),
+        FormatManager.resourcesAsNDJSON, None, sqlAlias)
     }    
   }
 
@@ -21,34 +24,27 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
   }
 
   def getEverything(patientId: String)(implicit url: Uri): FormattedOutput = {
-
      val results = qi.readEverythingForPatient(patientId).map { query =>
         qr.runQuery(QueryInput(query, url))
       }
-
-      //TODO fix this below, need to allow multiple queries, allow multiple in parallel
-      FormattedOutput(results, FormatManager.resourcesAsBundle(results, sqlAlias=sqlAlias))
+      results.filter(qo => qo.error != None) match {
+        case l if l.size > 0 => FormatManager.ErrorDefault(results)
+        case _ =>  
+          FormatManager.fromResultsBundle(results, 
+            FormatManager.resourcesAsBundle,
+            None,
+            "searchset",
+            sqlAlias)
+      }
+    
   }
 
-  //@Gerta tie the services together of (1) build query, (2) run query, (3) return result paged
-
-  /* 
-      2 primary ways to do paged searches... 
-       (1) Run a query with an order by... range 1-100, range 101-200
-       (2) Run a query and keep a cursor open
-
-       Search
-       (1) Build Query 
-        Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.May.2009'
-   */
   def search(typeSeg: String, uri: Map[String, String]): FormattedOutput = { //TODO FormattedOutput with an iterator instead of a list 
     val sql = qi.search(typeSeg, uri) // Builds out the search query to run 
     //run query... 
     //return a paged result (cursor implementation)
     ???
   }
-
-  
 }
 
 

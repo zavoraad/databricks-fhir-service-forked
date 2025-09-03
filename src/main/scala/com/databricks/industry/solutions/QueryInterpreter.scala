@@ -41,7 +41,7 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
 
   def readEverythingForPatient(patientId: String): Seq[String] = {
     Seq(
-      read("Patient", patientId, Map.empty[String,String]) 
+      read("Patient_nwm", patientId, Map.empty[String,String]) 
       ,search("Encounter", Map("subject" -> {dollarEverything.translate("prefix") + patientId}))
       ,search("Observation", Map("subject" -> {dollarEverything.translate("prefix")  + patientId}))
     )

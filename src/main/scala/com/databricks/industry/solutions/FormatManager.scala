@@ -7,31 +7,72 @@ import ujson.Obj
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 
 //TODO Update HTTP Response to be the response code applied to the result
-case class FormattedOutput(queryOutput: Seq[QueryOutput], data: String, statusCd: StatusCode = StatusCodes.OK)
+case class FormattedOutput(queryOutput: Seq[QueryOutput], data: String, statusCd: StatusCode = StatusCodes.OK){
+    def info: String = {
+       s"""statusCode:""" + statusCd + "\n" +
+       s"""numQueries:""" + queryOutput.length + "\n" +
+       s"""queryOutputs: """ + queryOutput.map(_.toString)
+    }
+}
 
 object FormatManager {
 
-    def ErrorDefault(qo: QueryOutput): FormattedOutput = {
-        FormattedOutput(Seq(qo), """{
+    def ErrorDefault(qol: Seq[QueryOutput]): FormattedOutput = {
+        FormattedOutput(qol, """{
                 "error": "Bad Request",
-                "message": """ + qo.error + """",
-                "status": 400
-            }""""
+                "message": """ + "\"" + qol.filter(qo => qo.error != None).map(qo => qo.error).mkString("\n")  + """\"",
+                "query" : """ + qol.filter(qo => qo.error != None).map(qo => qo.queryInput).mkString("\n") + """, 
+            }""",
+            StatusCodes.BadRequest
         )
+    }
+
+    def fromResultsNDJson(results: Seq[QueryOutput], f: (Seq[QueryOutput], Option[Seq[String]], Option[BaseAlias]) => String, columns: Option[Seq[String]], sqlAlias: Option[BaseAlias]): FormattedOutput = {
+        try { FormattedOutput(results, f(results, columns,sqlAlias)) }
+        catch {
+            case e: Exception => FormattedOutput(results, 
+                """{
+                "error": "Unable to properly format results from query",
+                "message": """ + e.toString + """,
+                "query" : """ + results.map(qo => qo.queryInput).mkString("\n") + """,
+                "data" : """ + results.map(qo => qo.queryResults).mkString("\n")  + """,
+                "sqlAlias": """ + sqlAlias.toString + """
+                }
+                """,
+                StatusCodes.InternalServerError
+            )
+        }   
+    }
+    
+    def fromResultsBundle(results: Seq[QueryOutput], f: (Seq[QueryOutput], Option[Seq[String]], String, Option[BaseAlias]) => String, columns: Option[Seq[String]], transactionType: String = "searchset", sqlAlias: Option[BaseAlias]): FormattedOutput = {
+        try { FormattedOutput(results, f(results, columns, transactionType, sqlAlias)) }
+        catch {
+            case e: Exception => FormattedOutput(results, 
+                """{
+                "error": "Unable to properly format results from query",
+                "message": """ + e.toString + """,
+                "query" : """ + results.map(qo => qo.queryInput).mkString("\n") + """,
+                "data" : """ + results.map(qo => qo.queryResults).mkString("\n")  + """,
+                "sqlAlias": """ + sqlAlias.toString + """
+                }
+                """,
+                StatusCodes.InternalServerError
+            )
+        }   
     }
 
     def time(): String = {
         ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"))
     }
 
-    def resourcesAsNDJSON(qol: List[QueryOutput], columns: Option[List[String]] = None): String = {
-        qol.map(qo => resourceAsNDJSON(qo, columns)).mkString("\n")
+    def resourcesAsNDJSON(qol: Seq[QueryOutput], columns: Option[Seq[String]] = None, sqlAlias: Option[BaseAlias] = None): String = {
+        qol.map(qo => resourceAsNDJSON(qo, columns, sqlAlias)).mkString("\n")
     }
 
     /*
         turn queryResults into ndjson
      */
-    def resourceAsNDJSON(qo: QueryOutput, columns: Option[List[String]] = None, sqlAlias: Option[BaseAlias] = None): String = {
+    def resourceAsNDJSON(qo: QueryOutput, columns: Option[Seq[String]] = None, sqlAlias: Option[BaseAlias] = None): String = {
         columns match {
             case Some(c)  => ???
             case None => {
@@ -45,7 +86,7 @@ object FormatManager {
         }
     }
 
-    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[List[String]] = None, transactionType: String = "searchset", sqlAlias: Option[BaseAlias] = None): String = {
+    def resourcesAsBundle(qol: Seq[QueryOutput], columns: Option[Seq[String]] = None, transactionType: String = "searchset", sqlAlias: Option[BaseAlias] = None): String = {
         ujson.write(
             Obj("resourceType" -> "Bundle",
                 "type" -> transactionType,
@@ -58,7 +99,7 @@ object FormatManager {
         construct the wrapped data needed for a bundle 
      */
     
-    def resourcesAsEntry(qo: QueryOutput, columns: Option[List[String]] = None, sqlAlias: Option[BaseAlias] = None): Seq[Obj] = {
+    def resourcesAsEntry(qo: QueryOutput, columns: Option[Seq[String]] = None, sqlAlias: Option[BaseAlias] = None): Seq[Obj] = {
         columns match {
             case Some(c) => ???
             case None => { //builds entry
@@ -96,4 +137,5 @@ object FormatManager {
         }
         j.obj
     }
+
 }

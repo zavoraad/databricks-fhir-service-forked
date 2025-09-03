@@ -28,13 +28,25 @@ trait FhirService {
       new QueryRunner(
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
           conRetries = 2, queryRetries = 2)
-      )
+      ),
+      sqlAlias = Option(BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate").asInstanceOf[BaseAlias])
     )
    }
 
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat(
+        path("debug" / "test") {
+          get {
+            logger.info("/debug/test endpoint get request made")
+            complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
+          }
+        },
+        path("debug" / "dbsqlConnect") {
+          get {
+            complete(service.qr.ds.getConnection.toString)
+          }
+        },
         pathPrefix("debug") {
           pathPrefix(Segment){ typeSeg =>
             pathPrefix(Segment) { idSeg =>
@@ -47,28 +59,15 @@ trait FhirService {
             }
           }
         },
-        path("debug" / "test") {
-          get {
-            logger.info("/debug/test endpoint get request made")
-            complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
-          }
-        },
-        path("debug" / "java.nio"){
-          complete(System.getProperties.toString)
-        },
-        path("debug" / "dbsqlConnect") {
-          get {
-            complete(service.qr.ds.getConnection.toString)
-          }
-        },
         //main entry point https://build.fhir.org/http.html
         pathPrefix("fhir") {
           concat(
             // Existing logic for /fhir/{resourceType}/{id}/$everything
-            pathPrefix("patient" / Segment / "$everything") { patientId =>
+            pathPrefix("patient_nwm" / Segment / "$everything") { patientId =>
               get {
                 extractUri { uri =>
                   val result = service.getEverything(patientId)(uri)
+                  logger.info(result.info)
                   complete(result.statusCd, result.data)
                 }
               }
@@ -79,6 +78,7 @@ trait FhirService {
                   get {  //read https://build.fhir.org/http.html#read
                    extractUri { uri =>
                      val result = service.read(typeSeg, idSeg)(uri)
+                     logger.info(result.info)
                      complete(result.statusCd, result.data)
                     }
                   }

@@ -1,1 +1,35 @@
-<logger name="com.zaxxer.hikari.pool.PoolBase" level="ERROR"/>
+<configuration>
+
+    <!-- This defines a target for logs, in this case, the console -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- Defines the format of the log message -->
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 
+      This is the logger for your specific application code, identified by its name.
+      Setting the level to "INFO" here ensures that INFO, WARN, and ERROR
+      messages from this logger will be processed.
+    -->
+    <logger name="AkkaFhirService" level="INFO" />
+    
+    <!-- 
+      This logger can remain for any other code in your package that
+      uses the default package-based logger naming convention.
+    -->
+    <logger name="com.databricks.industry.solutions" level="INFO" />
+
+    <!--
+      This is the root logger. It acts as a default for all other libraries.
+      Setting it to WARN keeps the output clean from noisy third-party libraries.
+    -->
+    <root level="WARN">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <!-- Example of quieting a specific noisy library -->
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+
+</configuration>
