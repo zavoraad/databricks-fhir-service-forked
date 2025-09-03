@@ -22,7 +22,7 @@ class ServiceManagerTest extends BaseTest {
   }
 
   test("Test sqlAlias Functions"){
-    val fhirResourceJson = """{"resourceType": "Patient", "id": "123", "active": true}"""
+    val fhirResourceJson = """{"resourceType": "Patient", "patientId": "123", "active": true}"""
     val queryResults = List(Map("Patient" -> fhirResourceJson))
     val qo = QueryOutput(
       queryResults = queryResults,
@@ -40,12 +40,12 @@ class ServiceManagerTest extends BaseTest {
     val result = FormatManager.resourceAsNDJSON(qo, sqlAlias = Some(sqlAlias))
 
     // Verify that the key has been renamed
-    val expected = """{"resourceType":"Patient","active":true,"patientId":"123"}"""
+    val expected = """{"resourceType":"Patient","active":true,"id":"123"}"""
     assert(result == expected)
   }
 
   test("Test resourcesAsBundle with sqlAlias") {
-    val fhirResourceJson = """{"resourceType": "Patient", "id": "123", "active": true}"""
+    val fhirResourceJson = """{"resourceType": "Patient", "id": "123", "isActive": true}"""
     val queryResults = List(Map("Patient" -> fhirResourceJson))
     val qo = QueryOutput(
       queryResults = queryResults,
@@ -67,9 +67,8 @@ class ServiceManagerTest extends BaseTest {
     val resource = resultJson("entry").arr.head("resource")
 
     assert(resource("resourceType").str == "Patient")
-    assert(resource("isActive").bool == true) // Check for the new aliased key
-    assert(!resource.obj.contains("active")) // Check that the old key is removed
+    assert(resource("active").bool == true) // Check for the new aliased key
+    assert(!resource.obj.contains("isActive")) // Check that the old key is removed
     assert(resultJson("entry").arr.head("fullUrl").str == "urn:uuid:123")
   }
-
 } 
