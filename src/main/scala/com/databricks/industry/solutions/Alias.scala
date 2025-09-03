@@ -12,7 +12,7 @@ trait Alias{
   override def toString: String = {
     a match {
       case None => ""
-      case Some(x) => x.map(p => p(0) + " = " + p(1)).mkString("\n")
+      case Some(x) => "{" + x.map(p => p(0) + ":" + p(1)).mkString(",") + "}"
     }
   }
 }

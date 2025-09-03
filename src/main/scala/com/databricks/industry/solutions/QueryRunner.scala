@@ -33,6 +33,12 @@ case class QueryOutput(
        |data: $queryResults
        |""".stripMargin
   }
+
+  //Give a more parsable format to traverse and save off into a table
+  def info: String = {
+    //TODO
+    toString
+  }
 }
 
 

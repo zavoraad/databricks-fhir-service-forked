@@ -2,14 +2,18 @@ package com.databricks.industry.solutions.fhirapi
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import java.sql.Connection
+import scala.util.Using
 
 class PoolDataStore(val auth: Auth, val conRetries: Int=1, val queryRetries: Int =1, val minIdle: Int=1, val maxPoolSize: Int = -1)  extends DataStore{
 
 
   override def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
-    val statement = con.createStatement
-    val resultSet = statement.executeQuery(query)
     try {
+      val statement = try { con.createStatement } catch { case e: Exception => throw e}
+      val resultSet = try { statement.executeQuery(query) } catch { case e: Exception => 
+            statement.close
+            throw e
+          }
       val it = new Iterator[Map[String, String]] {
         def hasNext: Boolean = resultSet.next() // Check if there are more rows
         def next(): Map[String, String] = {
@@ -20,13 +24,15 @@ class PoolDataStore(val auth: Auth, val conRetries: Int=1, val queryRetries: Int
       }
       (it.toList, None)
     } catch {
-      case r if retries > 0 => execute(query, retries - 1, con)
-      case e: Exception =>
-        (Nil, Some(e.toString))
-    } finally {
-      if (resultSet != null) resultSet.close
-      if (statement != null) statement.close
-      if (con != null) con.close
+      case e: Exception => 
+        if (retries > 0) 
+          execute(query, retries - 1, con) 
+        else {
+          (Nil, Some(e.toString)) 
+        }
+    } 
+    finally {
+      con.close
     }
   }
   private val authConfig = new HikariConfig()
