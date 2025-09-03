@@ -123,10 +123,10 @@ object FormatManager {
                 x.a match {
                     case Some(m) => {
                         m.map(y => 
-                        j.obj.contains(y(0)) match {
+                        j.obj.contains(y(1)) match {
                             case true => {
-                                j(y(1)) = j(y(0))
-                                j.obj.remove(y(0))
+                                j(y(0)) = j(y(1))
+                                j.obj.remove(y(1))
                             }
                             case _ => {}
                         })
