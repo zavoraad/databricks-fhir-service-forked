@@ -27,7 +27,12 @@ trait FhirService {
       BaseAlias.fromConfig(config, "databricks.alias.dollareverything")),
       new QueryRunner(
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
-          conRetries = 2, queryRetries = 2)
+          conRetries = config.getInt("api.jdbc.hikari.connectionRetries"), 
+          queryRetries = config.getInt("jdbc.hikkari.queryRetries"),
+          minIdle = config.getInt("api.jdbc.hikari.minIdle"),
+          maxPoolSize = config.getInt("api.jdbc.hikari.maxPoolSize"),
+          timeoutMS = config.getInt("api.jdbc.hikari.timeoutMS")
+          )
       ),
       sqlAlias = Option(BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate").asInstanceOf[BaseAlias])
     )
@@ -108,3 +113,4 @@ object FhirService extends App with FhirService {
 
   Http().newServerAt(config.getString("http.interface"), config.getInt("http.port")).bindFlow(routes)
 }
+
