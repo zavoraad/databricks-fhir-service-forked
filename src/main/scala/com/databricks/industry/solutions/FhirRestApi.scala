@@ -28,7 +28,7 @@ trait FhirService {
       new QueryRunner(
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
           conRetries = config.getInt("api.jdbc.hikari.connectionRetries"), 
-          queryRetries = config.getInt("api.jdbc..hikari.queryRetries"),
+          queryRetries = config.getInt("api.jdbc.hikari.queryRetries"),
           minIdle = config.getInt("api.jdbc.hikari.minIdle"),
           maxPoolSize = config.getInt("api.jdbc.hikari.maxPoolSize"),
           timeoutMS = config.getInt("api.jdbc.hikari.timeoutMS")
