@@ -15,7 +15,7 @@ class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
   }
 }
 
-case class QueryInput(query: String, url: Uri)
+case class QueryInput(query: String, url: Uri = Uri(""))
 
 case class QueryOutput(
   queryResults: List[Map[String, String]], //rows of column name, value results
