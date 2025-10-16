@@ -21,58 +21,79 @@ trait FhirService {
 
   lazy val service = {
     ServiceManager(
-      QueryInterpreter(config.getString("databricks.data.catalog"), config.getString("databricks.data.schema")),
+      QueryInterpreter(config.getString("databricks.data.catalog"), 
+      config.getString("databricks.data.schema"),  
+      BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate"),
+      BaseAlias.fromConfig(config, "databricks.alias.dollareverything")),
       new QueryRunner(
-//        Class.forName("com.databricks.industry.solutions.fhirapi." + config.getString("databricks.warehouse.class"))(
-//          TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
-//        )
         PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
-          conRetries = 2, queryRetries = 2)
-//SimpleDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")))
-      )
+          conRetries = config.getInt("api.jdbc.hikari.connectionRetries"), 
+          queryRetries = config.getInt("api.jdbc.hikari.queryRetries"),
+          minIdle = config.getInt("api.jdbc.hikari.minIdle"),
+          maxPoolSize = config.getInt("api.jdbc.hikari.maxPoolSize"),
+          timeoutMS = config.getInt("api.jdbc.hikari.timeoutMS")
+          )
+      ),
+      sqlAlias = Option(BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate").asInstanceOf[BaseAlias])
     )
    }
 
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat(
-        pathPrefix("debug") {
-          pathPrefix(Segment){ typeSeg =>
-            pathPrefix(Segment) { idSeg =>
-              get {
-                extractUri { uri =>
-                  val result = service.read(typeSeg, idSeg, (uri.query().toMap))
-                  complete{ result.queryOutput.toString  }
-                }
-              }
-            }
-          }
-        },
         path("debug" / "test") {
           get {
             logger.info("/debug/test endpoint get request made")
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
           }
         },
-        path("debug" / "java.nio"){
-          complete(System.getProperties.toString)
-        },
         path("debug" / "dbsqlConnect") {
           get {
             complete(service.qr.ds.getConnection.toString)
           }
         },
-        pathPrefix("fhir") {
-          concat(
-            pathPrefix(Segment) { typeSeg =>
-              pathPrefix(Segment) { idSeg =>
-                get {
-                  extractUri { uri =>
-                    val result = service.read(typeSeg, idSeg, uri.query().toMap)
-                    complete(HttpEntity(ContentTypes.`application/json`, result.bundle))
-                  }
+        pathPrefix("debug") {
+          pathPrefix(Segment){ typeSeg =>
+            pathPrefix(Segment) { idSeg =>
+              get {
+                extractUri { uri =>
+                  val result = service.read(typeSeg, idSeg)(uri)
+                  complete{ result.queryOutput.toString  }
                 }
               }
+            }
+          }
+        },
+        //main entry point https://build.fhir.org/http.html
+        pathPrefix("fhir") {
+          concat(
+            // Existing logic for /fhir/{resourceType}/{id}/$everything
+            pathPrefix("patient" / Segment / "$everything") { patientId =>
+              get {
+                extractUri { uri =>
+                  val result = service.getEverything(patientId)(uri)
+                  logger.info(result.info)
+                  complete(result.statusCd, result.data)
+                }
+              }
+            },
+            pathPrefix(Segment) { typeSeg =>
+              concat(
+                pathPrefix(Segment) { idSeg => 
+                  get {  //read https://build.fhir.org/http.html#read
+                   extractUri { uri =>
+                     val result = service.read(typeSeg, idSeg)(uri)
+                     logger.info(result.info)
+                     complete(result.statusCd, result.data)
+                    }
+                  }
+                },
+                 //create https://build.fhir.org/http.html#create
+                post {
+
+                  ???
+                }
+            )
             },
             pathPrefix("_search"){
               complete("_search endpoint")
@@ -92,3 +113,4 @@ object FhirService extends App with FhirService {
 
   Http().newServerAt(config.getString("http.interface"), config.getInt("http.port")).bindFlow(routes)
 }
+

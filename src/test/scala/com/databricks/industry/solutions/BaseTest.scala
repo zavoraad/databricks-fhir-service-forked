@@ -2,6 +2,7 @@ package com.databricks.industry.solutions.fhirapi
 
 import org.scalatest.funsuite.AnyFunSuite
 import com.typesafe.config.ConfigFactory
+import com.databricks.industry.solutions.fhirapi.TokenAuth
 
 class BaseTest extends AnyFunSuite{
   def config = ConfigFactory.load()

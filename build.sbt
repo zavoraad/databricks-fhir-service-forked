@@ -42,8 +42,18 @@ libraryDependencies ++= {
   ).map(_.cross(CrossVersion.for3Use2_13))
 }
 
+
+lazy val arrowJVMOptions = Seq(
+  "--add-opens=java.base/java.nio=ALL-UNNAMED"
+)
+
 run / fork := true
-run / javaOptions += "--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED"
+run / javaOptions ++= arrowJVMOptions
+
+reStart / javaOptions ++= arrowJVMOptions
+
+Test / fork := true
+Test / javaOptions ++= arrowJVMOptions
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension

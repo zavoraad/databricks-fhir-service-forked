@@ -7,31 +7,28 @@ trait DataStore{
   val conRetries: Int
   val queryRetries: Int
 
-  //Return a paged search
   //https://build.fhir.org/http.html#search
-  def executeSearch(query: String, retries: Int, con: Connection): (Iterator[Map[String, String]], Option[String]) = {
-    try{
-      val statement = con.createStatement
-      val resultSet = statement.executeQuery(query)
+  def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
+    val statement = con.createStatement
+    val resultSet = statement.executeQuery(query)
+    try {
       val it = new Iterator[Map[String, String]] {
         def hasNext: Boolean = resultSet.next() // Check if there are more rows
         def next(): Map[String, String] = {
-          (1 to resultSet.getMetaData.getColumnCount).map{ i =>
+          (1 to resultSet.getMetaData.getColumnCount).map { i =>
             resultSet.getMetaData.getColumnName(i) -> resultSet.getString(i)
           }.toMap
         }
       }
-      (it, None)
-    }catch{
-      case r if retries > 0 => executeSearch(query, retries-1, con)
+      (it.toList, None)
+    } catch {
+      case r if retries > 0 => execute(query, retries - 1, con)
       case e: Exception =>
-            (Iterator[Map[String, String]](), Some(e.toString))
+        (Nil, Some(e.toString))
+    } finally {
+      if (resultSet != null) resultSet.close
+      if (statement != null) statement.close
     }
-  }
-
-  def execute(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
-    val s = executeSearch(query, retries,con)
-    (s._1.toList, s._2)
   }
 
   protected def connect: Connection //internal class connection handling
