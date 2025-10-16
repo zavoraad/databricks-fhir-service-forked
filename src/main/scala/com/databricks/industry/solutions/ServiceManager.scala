@@ -6,6 +6,8 @@ import scala.util.{Failure, Success}
 import akka.http.scaladsl.model.Uri
 import akka.event.{LoggingAdapter,Logging}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Option[BaseAlias] = None) {
 
@@ -24,19 +26,35 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
   }
 
   def getEverything(patientId: String)(implicit url: Uri): FormattedOutput = {
-     val results = qi.readEverythingForPatient(patientId).map { query =>
+    val queries = qi.readEverythingForPatient(
+      patientId,
+      {
+        qr.runQuery(QueryInput(qi.tablesWithColumns(Seq("subject", "patient", "beneficiary", "individual")))) match {
+          case qo if qo.error == None => qo.queryResults.map(row => (row.get("table_name").get, row.get("column_name").get))
+          case qo => return FormatManager.ErrorDefault(Seq(qo)) //Error reading metadata tables in UC of tables + columns
+        }
+      }
+    )
+
+    val futureResults = Future.traverse(queries) { query =>
+      Future {
         qr.runQuery(QueryInput(query, url))
       }
-      results.filter(qo => qo.error != None) match {
-        case l if l.size > 0 => FormatManager.ErrorDefault(results)
-        case _ =>  
-          FormatManager.fromResultsBundle(results, 
-            FormatManager.resourcesAsBundle,
-            None,
-            "searchset",
-            sqlAlias)
-      }
-    
+    }
+
+    val results = Await.result(futureResults, 30.seconds)
+
+    results.filter(qo => qo.error != None) match {
+      case l if l.size > 0 => FormatManager.ErrorDefault(results)
+      case _ =>
+        FormatManager.fromResultsBundle(
+          results,
+          FormatManager.resourcesAsBundle,
+          None,
+          "searchset",
+          sqlAlias
+        )
+    }
   }
 
   def search(typeSeg: String, uri: Map[String, String]): FormattedOutput = { //TODO FormattedOutput with an iterator instead of a list 
@@ -45,9 +63,23 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
     //return a paged result (cursor implementation)
     ???
   }
+
+  def allTablesInSchema: Seq[String] = {
+    qr.runQuery(QueryInput(qi.allTablesInSchema))
+      .queryResults.map(row => row.getOrElse("tableName", ""))
+      .filter(_!="")
+  }
+
+  def tableColumns(tableName: String): Seq[String] = {
+    qr.runQuery(QueryInput(qi.tableSchema(tableName)))
+      .queryResults.map(row => row.getOrElse("column_name", ""))
+      .filter(_!="")
+  }
+
+  def tablesWithColumns(columns: Seq[String]): Seq[(String, String)] = {
+    qr.runQuery(QueryInput(qi.tablesWithColumns(columns), Uri("")))
+      .queryResults.map(row => (row.getOrElse("table_name", ""), row.getOrElse("column_name", "")))
+      .filter( {case(t,_) => t != ""})
+  }
 }
 
-
-/* 
-reference: "Patient/de21500ed1025bf65c1b8033ec8ccae8f8f9f29f95f3b2ec2d9b311f60d72ef1"
- */

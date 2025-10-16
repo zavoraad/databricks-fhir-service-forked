@@ -39,12 +39,15 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
     paramsToWhere(params)
   }
 
-  def readEverythingForPatient(patientId: String): Seq[String] = {
-    Seq(
-      read("Patient", patientId, Map.empty[String,String]) 
-      ,search("Encounter", Map("subject" -> {dollarEverything.translate("prefix") + patientId}))
-      ,search("Observation", Map("subject" -> {dollarEverything.translate("prefix")  + patientId}))
-    )
+ /* 
+   patientId = reference data to use in other resources
+   info = (Table, Column) to query and filter for the patient's data 
+   @returns a sequence of queries to be run 
+  */
+  def readEverythingForPatient(patientId: String, info: Seq[(String,String)]): Seq[String] = {
+    Seq(read("Patient", patientId, Map.empty[String,String]) ) ++ 
+      info.map((table, column) => 
+        search(table, Map(column -> {dollarEverything.translate("prefix") + patientId})))
   }
   /* 
     build the where clause for any query
@@ -57,4 +60,26 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
       case _ =>  " WHERE " + params.map(p => sqlAlias.translate(p(0)) + " = \"" + p(1) + "\"").mkString(" AND " )
     }
   }
+
+/* 
+  Used for $everything / readEverythingForPatient
+ */
+  def allTablesInSchema:String = "show tables in "  + catalog + "." + schema
+  
+  /* 
+    Only top level columns shown for this, not the full schema
+   */
+  def tableSchema(tableName: String):String = """SELECT column_name 
+    FROM """ + catalog + """.information_schema.columns
+    where table_schema = '""" + schema + """'
+    and table_name = '""" + tableName + """'
+    """
+
+  /* 
+    Find all tables that contain the following list of columns in the specified schema
+   */
+  def tablesWithColumns(columns: Seq[String]):String = """SELECT distinct table_name, column_name 
+    FROM """ + catalog + """.information_schema.columns
+    where table_schema = '""" + schema + """'
+      and column_name in (""" + columns.map(c => "'" + c + "'").mkString(",") +  ")"
 }
