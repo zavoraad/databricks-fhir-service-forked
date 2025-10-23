@@ -52,9 +52,84 @@ Understanding how the components work together:
 
 ### Configuring
 
-All configurations under Databricks can be overridden with environment variables that are set  prior to app launching
+The service uses environment variables to configure connections to Databricks and API behavior. All settings have defaults in [`application.conf`](src/main/resources/application.conf) that can be overridden via environment variables set prior to launching the application.
 
-https://github.com/zavoraad/databricks-fhir-service-forked/blob/docker-build/src/main/resources/application.conf
+#### Required: Databricks Connection
+
+To connect to your Databricks SQL Warehouse:
+
+| Environment Variable | Description | Example |
+|---------------------|-------------|---------|
+| `jdbc` | JDBC connection string for your Databricks SQL Warehouse | `jdbc:databricks://<workspace>.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/<warehouse-id>` |
+| `token` | Databricks personal access token or service principal token | `dapi1234567890abcdef...` |
+
+**How to get these values:**
+1. In Databricks workspace, navigate to **SQL Warehouses**
+2. Select your warehouse and click **Connection Details**
+3. Copy the JDBC URL and set as `jdbc` environment variable
+4. Generate a Personal Access Token from **User Settings → Access Tokens**
+
+#### Required: Data Location
+
+Specify where FHIR resource tables are stored:
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `catalog` | Unity Catalog name | `hls_healthcare` |
+| `schema` | Schema containing FHIR resource tables | `databricks_fhir_service_forked` |
+
+These should match the location where you loaded your FHIR data using `create_fhir_data_backend.py`.
+
+#### Optional: HTTP Server Configuration
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `interface` | Network interface to bind to | `0.0.0.0` |
+| `port` | Port number for the API server | `9000` |
+| `request-timeout` | Maximum request timeout | `60s` |
+
+#### Optional: Connection Pool Settings
+
+Tune Hikari connection pool for your workload:
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `minIdle` | Minimum idle connections | `1` |
+| `maxPoolSize` | Maximum connection pool size | `-1` (2x CPUs) |
+| `timeoutMS` | Connection timeout in milliseconds | `30000` |
+| `connectionRetries` | Number of connection retry attempts | `1` |
+| `queryRetries` | Number of query retry attempts | `1` |
+
+#### Optional: Logging
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `loglevel` | Akka logging level (DEBUG, INFO, WARNING, ERROR) | `DEBUG` |
+
+#### Example Configuration
+
+Create a `.env` file or export these variables before starting the service:
+
+```bash
+# Databricks Connection (REQUIRED)
+export jdbc="jdbc:databricks://your-workspace.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/abc123def456"
+export token="dapi..."
+
+# Data Location (REQUIRED)
+export catalog="hls_healthcare"
+export schema="databricks_fhir_service"
+
+# HTTP Server (OPTIONAL)
+export port="9000"
+export interface="0.0.0.0"
+
+# Connection Pool (OPTIONAL)
+export maxPoolSize="10"
+export timeoutMS="60000"
+
+# Logging (OPTIONAL)
+export loglevel="INFO"
+```
 
 ### Deploying
 
@@ -114,9 +189,9 @@ The script appends FHIR resources into Databricks tables with the following stru
 ```
 
 For example:
-- `hls_healthcare.databricks_fhir_service_forked.patient`
-- `hls_healthcare.databricks_fhir_service_forked.observation`
-- `hls_healthcare.databricks_fhir_service_forked.encounter`
+- `hls_healthcare.databricks_fhir_service.patient`
+- `hls_healthcare.databricks_fhir_service.observation`
+- `hls_healthcare.databricks_fhir_service.encounter`
 
 Each table contains the parsed FHIR resource data with an `id` column that serves as the resource identifier for API queries.
 
