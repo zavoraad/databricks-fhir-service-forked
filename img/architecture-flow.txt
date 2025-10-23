@@ -1,0 +1,158 @@
+═══════════════════════════════════════════════════════════════════════════════
+  FHIR API - SIMPLIFIED REQUEST FLOW
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CLIENT REQUEST                                                             │
+│  GET /fhir/Patient/123                                                      │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ① FhirRestApi                                                              │
+│  ────────────────                                                           │
+│  • Entry point for all HTTP requests                                        │
+│  • Routes request to appropriate handler                                    │
+│  • Loads configuration                                                      │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ② ServiceManager                                                           │
+│  ──────────────────                                                         │
+│  • THE ORCHESTRATOR - Coordinates entire request pipeline                   │
+│  • Calls three components in parallel:                                      │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                 ┌─────────────────┼─────────────────┐
+                 │                 │                 │
+                 ▼                 ▼                 ▼
+    ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+    │ QueryInterpreter│ │   QueryRunner   │ │ FormatManager   │
+    │                 │ │                 │ │                 │
+    │ Build SQL       │ │ Execute Query   │ │ Format Output   │
+    │                 │ │                 │ │                 │
+    │ URL → SQL       │ │ SQL → Results   │ │ Results → FHIR  │
+    └────────┬────────┘ └────────┬────────┘ └─────────────────┘
+             │                   │
+             │                   ▼
+             │          ┌─────────────────┐
+             │          │   DataStore     │
+             │          │                 │
+             │          │ Connection Pool │
+             │          │ + Retry Logic   │
+             │          └────────┬────────┘
+             │                   │
+             │                   ▼
+             │          ┌─────────────────┐
+             │          │      Auth       │
+             │          │   (TokenAuth)   │
+             │          │                 │
+             │          │ JDBC + Token    │
+             │          └────────┬────────┘
+             │                   │
+             │                   ▼
+             │          ┌─────────────────┐
+             │          │   Databricks    │
+             │          │  SQL Warehouse  │
+             │          │                 │
+             │          │   (Database)    │
+             │          └─────────────────┘
+             │
+             ▼
+    ┌─────────────────────────────────────┐
+    │ SQL Query Example:                  │
+    │                                     │
+    │ SELECT to_json(patient)             │
+    │ FROM catalog.schema.patient         │
+    │ WHERE id = '123'                    │
+    └─────────────────────────────────────┘
+
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  RESPONSE FLOW                                                              │
+│  ──────────────────                                                         │
+│                                                                             │
+│  QueryRunner returns QueryOutput:                                           │
+│    • queryResults: [JSON data]                                              │
+│    • queryRuntime: 245ms                                                    │
+│    • error: None                                                            │
+│                                                                             │
+│  FormatManager converts to FHIR format:                                     │
+│    • Bundle (for searches)                                                  │
+│    • Resource (for reads)                                                   │
+│    • NDJSON (for bulk)                                                      │
+│    • Proper HTTP status codes                                               │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  HTTP RESPONSE                                                              │
+│  ────────────────                                                           │
+│  Status: 200 OK                                                             │
+│  Content-Type: application/json                                             │
+│                                                                             │
+│  {                                                                          │
+│    "resourceType": "Patient",                                               │
+│    "id": "123",                                                             │
+│    "meta": { ... },                                                         │
+│    ...                                                                      │
+│  }                                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  COMPONENT SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────┬─────────────────────────────┬──────────────────────────┐
+│ Component        │ Purpose                     │ Key File                 │
+├──────────────────┼─────────────────────────────┼──────────────────────────┤
+│ FhirRestApi      │ HTTP router & entry point   │ FhirRestApi.scala        │
+│ ServiceManager   │ Request orchestrator (HUB)  │ ServiceManager.scala     │
+│ QueryInterpreter │ URL → SQL translator        │ QueryInterpreter.scala   │
+│ QueryRunner      │ SQL executor                │ QueryRunner.scala        │
+│ DataStore        │ DB connection manager       │ DataStore.scala          │
+│ Auth             │ Authentication handler      │ Auth.scala               │
+│ FormatManager    │ Output formatter (→ FHIR)   │ FormatManager.scala      │
+└──────────────────┴─────────────────────────────┴──────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  QUICK NAVIGATION GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+  Want to understand...                   → Start with this file:
+  ────────────────────────────────────────────────────────────────────────────
+  📍 Overall architecture                 → ServiceManager.scala (START HERE!)
+  🔍 How URLs become SQL queries          → QueryInterpreter.scala
+  ⚙️  How queries are executed            → QueryRunner.scala
+  🗄️  Database connection & pooling       → DataStore.scala
+  🔐 Authentication                       → Auth.scala
+  📋 FHIR response formatting             → FormatManager.scala
+  🌐 API routes & endpoints               → FhirRestApi.scala
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  EXAMPLE: Reading a Patient
+═══════════════════════════════════════════════════════════════════════════════
+
+  Request:  GET /fhir/Patient/a62a41dc-5ac1-ff47-3fc5-08f6ad045571
+
+  Step 1: FhirRestApi routes to Patient handler
+  Step 2: ServiceManager orchestrates:
+          → QueryInterpreter builds:
+            "SELECT to_json(patient) AS resultset 
+             FROM hls_healthcare.databricks_fhir_service_forked.patient 
+             WHERE id = 'a62a41dc-5ac1-ff47-3fc5-08f6ad045571'"
+          → QueryRunner executes via DataStore
+          → FormatManager converts to FHIR JSON
+  Step 3: Return 200 OK with Patient resource
+
+  Response Time: ~2444ms (query execution)
+  Result: FHIR-compliant Patient resource as JSON
+
+
+═══════════════════════════════════════════════════════════════════════════════
+

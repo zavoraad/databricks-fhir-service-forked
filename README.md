@@ -3,8 +3,52 @@
 [![DBR](https://img.shields.io/badge/DBR-CHANGE_ME-red?logo=databricks&style=for-the-badge)](https://docs.databricks.com/release-notes/runtime/CHANGE_ME.html)
 [![CLOUD](https://img.shields.io/badge/CLOUD-CHANGE_ME-blue?logo=googlecloud&style=for-the-badge)](https://databricks.com/try-databricks)
 
-## Business Problem
-Complying to FHIR specifications found at: https://www.hl7.org/fhir/http.html
+## Scope
+
+This service implements a FHIR-compliant RESTful API on Databricks, adhering to the [FHIR RESTful API specification](https://hl7.org/fhir/http.html). The implementation supports the following FHIR interaction types:
+
+### Instance Level Interactions
+Operations on individual resource instances identified by their logical ID:
+- [x] **read**: Read the current state of a specific resource (e.g., `GET /fhir/Patient/[id]`)
+- [ ] **vread**: Read a specific version of a resource
+- [ ] **update**: Update an existing resource by its ID (or create if new)
+- [ ] **patch**: Update a resource by posting changes
+- [ ] **delete**: Delete a specific resource
+- [ ] **history**: Retrieve change history for a resource
+
+### Type Level Interactions
+Operations across all instances of a specific resource type:
+- [ ] **create**: Create a new resource with server-assigned ID
+- [ ] **search**: Search resources of a type based on filter criteria
+- [ ] **history**: Retrieve change history for a resource type
+
+### Whole System Interactions
+Operations that span across the entire FHIR server:
+- [ ] **capabilities**: Get capability statement for the system (metadata endpoint)
+- [ ] **batch/transaction**: Perform multiple operations in a single request
+- [ ] **search**: Search across all resource types
+- [ ] **history**: Retrieve change history for all resources
+
+### Extended Operations
+- [ ] **$everything**: Patient compartment operation to retrieve all resources related to a patient
+
+For complete FHIR specification details, see: https://hl7.org/fhir/http.html
+
+## Architecture
+
+Understanding how the components work together:
+- **[Simplified Architecture Diagrams](img/architecture-simplified.md)** - Visual flow diagrams showing request lifecycle
+- **[ASCII Architecture Flow](img/architecture-flow.txt)** - Text-based diagrams for quick reference
+
+### Quick Navigation
+| Want to understand... | Start with this file |
+|----------------------|---------------------|
+| 📍 Overall architecture | `ServiceManager.scala` |
+| 🔍 URL to SQL translation | `QueryInterpreter.scala` |
+| ⚙️ Query execution | `QueryRunner.scala` |
+| 🗄️ Database connections | `DataStore.scala` |
+| 📋 FHIR formatting | `FormatManager.scala` |
+| 🌐 API routes | `FhirRestApi.scala` |
 
 ### Configuring
 
