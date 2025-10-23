@@ -60,7 +60,7 @@ To connect to your Databricks SQL Warehouse:
 
 | Environment Variable | Description | Example |
 |---------------------|-------------|---------|
-| `jdbc` | JDBC connection string for your Databricks SQL Warehouse | `jdbc:databricks://<workspace>.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/<warehouse-id>` |
+| `jdbc` | JDBC connection string for your Databricks SQL Warehouse | `jdbc:databricks://<workspace>.cloud.databricks.com:443` |
 | `token` | Databricks personal access token or service principal token | `dapi1234567890abcdef...` |
 
 **How to get these values:**
@@ -112,7 +112,7 @@ Create a `.env` file or export these variables before starting the service:
 
 ```bash
 # Databricks Connection (REQUIRED)
-export jdbc="jdbc:databricks://your-workspace.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/abc123def456"
+export jdbc="jdbc:databricks://your-workspace.cloud.databricks.com:443..."
 export token="dapi..."
 
 # Data Location (REQUIRED)
