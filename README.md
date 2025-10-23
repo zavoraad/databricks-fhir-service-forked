@@ -93,12 +93,35 @@ queryExecuted: SELECT to_json(patient) AS resultset FROM hls_healthcare.databric
 
 ```
 
-## Reference Architecture
-insert/update  -> dbignite to read data and split into tables
-writing -> bundle.py in FHIR
+## Loading Backend Data
 
-## Authors
-aaron.zavora@databricks.com, XponentL Data
+Backend data is loaded through Databricks compute using the [`create_fhir_data_backend.py`](scripts/create_fhir_data_backend.py) script, which leverages the [`dbignite`](https://github.com/databrickslabs/dbignite) Python package to ingest FHIR-compliant resources.
+
+### How It Works
+
+The script performs the following operations:
+
+1. **Reads FHIR Resources**: Uses `dbignite.readers.read_from_directory()` to read FHIR-compliant JSON files from a source location (e.g., S3, DBFS)
+2. **Parses Bundle Entries**: Applies the `FhirSchemaModel` (R4 schema) to parse and structure the FHIR bundle entries
+3. **Writes to Databricks Tables**: Creates one table per FHIR resource type (e.g., `Patient`, `Observation`, `Encounter`) in the target schema
+4. **Parallel Processing**: Uses multithreading to write multiple resource types concurrently for improved performance
+
+### Usage
+
+The script appends FHIR resources into Databricks tables with the following structure:
+```
+<catalog>.<schema>.<resource_type>
+```
+
+For example:
+- `hls_healthcare.databricks_fhir_service_forked.patient`
+- `hls_healthcare.databricks_fhir_service_forked.observation`
+- `hls_healthcare.databricks_fhir_service_forked.encounter`
+
+Each table contains the parsed FHIR resource data with an `id` column that serves as the resource identifier for API queries.
+
+**Note**: This is a backend data loading process, not a REST API function. Data loading is performed separately from API read operations.
+
 
 ## Project support 
 
