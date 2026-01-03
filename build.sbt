@@ -25,15 +25,23 @@ libraryDependencies ++= {
 
   Seq(
     "com.databricks"    % "databricks-jdbc" % "2.6.40",
+    "com.databricks"    % "zerobus-ingest-sdk" % "0.1.0",
+    //"com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
+    //"com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.0",
     "joda-time"         % "joda-time"       % "2.12.7",
+    "ch.qos.logback"    % "logback-classic"  % "1.5.18",
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
     "com.lihaoyi" %% "upickle" % "4.1.0",
     "com.zaxxer" % "HikariCP" % "6.3.0",
+    "com.google.protobuf" % "protobuf-java" % "4.33.0",
+    "com.google.protobuf" % "protobuf-java-util" % "4.33.0",
+    "ch.qos.logback.contrib" % "logback-json-classic" % "0.1.5",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test"
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,
+    "com.typesafe.akka" %% "akka-slf4j" % akkaV,
     "com.typesafe.akka" %% "akka-stream" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV,
     "de.heikoseeberger" %% "akka-http-circe" % akkaHttpCirceV,
@@ -54,6 +62,10 @@ reStart / javaOptions ++= arrowJVMOptions
 
 Test / fork := true
 Test / javaOptions ++= arrowJVMOptions
+
+Compile / PB.targets := Seq(
+  PB.gens.java -> (Compile / sourceManaged).value
+)
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   s"${name.value}-${version.value}." + artifact.extension

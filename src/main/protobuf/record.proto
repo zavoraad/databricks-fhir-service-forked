@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package com.databricks.industry.solutions.fhirapi;
+
+message LogData {
+  repeated QueryOutputProto query_output = 1;
+  string data = 2;
+  string status_cd = 3;
+}
+
+message QueryOutputProto {
+  repeated MapStringString query_results = 1;
+  int64 query_runtime = 2;
+  string query_start_time = 3;
+  optional string error = 4;
+  string query_input = 5;
+}
+
+message MapStringString {
+  map<string, string> values = 1;
+}

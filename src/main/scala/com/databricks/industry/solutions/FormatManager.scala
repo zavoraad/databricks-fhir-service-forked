@@ -6,7 +6,19 @@ import scala.collection.immutable.List
 import ujson.Obj
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 
-//TODO Update HTTP Response to be the response code applied to the result
+/* Spark DDL of this case class
+CREATE TABLE ... (
+  queryOutput ARRAY<STRUCT<
+    queryResults: ARRAY<MAP<STRING, STRING>>,
+    queryRuntime: BIGINT,
+    queryStartTime: STRING,
+    error: STRING,
+    queryInput: STRING
+  >>,
+  data STRING,
+  statusCd STRING
+);
+ */
 case class FormattedOutput(queryOutput: Seq[QueryOutput], data: String, statusCd: StatusCode = StatusCodes.OK){
     def info: String = {
        s"""statusCode:""" + statusCd + "\n" +

@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 import java.util.{Date, UUID}
 import ujson.Obj
 import akka.http.scaladsl.model.Uri
+import com.databricks.industry.solutions.fhirapi.DataStore
 
 
 class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
