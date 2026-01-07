@@ -27,6 +27,9 @@ import io.circe.{Encoder, Json}
 import org.joda.time.DateTime
 import akka.http.scaladsl.model.StatusCode
 import com.google.protobuf.Message
+import com.databricks.industry.solutions.fhirapi.queries._
+import com.databricks.industry.solutions.fhirapi.datastore.{PoolDataStore, TokenAuth}
+
 
 
 trait FhirService {
@@ -179,7 +182,7 @@ object FhirService extends App with FhirService {
         config.getString("logging.zerobus.clientId"),
         config.getString("logging.zerobus.clientSecret"),
         config.getString("logging.zerobus.tablename"),
-        Class.forName("com.databricks.industry.solutions.fhirapi.record." + 
+        Class.forName("com.databricks.industry.solutions.fhirapi.Record$" + 
       config.getString("logging.zerobus.tableProtoBuf")).asInstanceOf[Class[? <: Message]]
       )
 }

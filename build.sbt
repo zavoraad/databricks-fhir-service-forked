@@ -22,6 +22,7 @@ libraryDependencies ++= {
   val circeV         = "0.14.9"
   val scalaTestV     = "3.2.19"
   val akkaHttpCirceV = "1.39.2"
+  val grpcV          = "1.68.1"
 
   Seq(
     "com.databricks"    % "databricks-jdbc" % "2.6.40",
@@ -37,6 +38,9 @@ libraryDependencies ++= {
     "com.zaxxer" % "HikariCP" % "6.3.0",
     "com.google.protobuf" % "protobuf-java" % "4.33.0",
     "com.google.protobuf" % "protobuf-java-util" % "4.33.0",
+    "io.grpc" % "grpc-netty-shaded" % grpcV,
+    "io.grpc" % "grpc-protobuf" % grpcV,
+    "io.grpc" % "grpc-stub" % grpcV,
     "ch.qos.logback.contrib" % "logback-json-classic" % "0.1.5",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test"
   ) ++ Seq(

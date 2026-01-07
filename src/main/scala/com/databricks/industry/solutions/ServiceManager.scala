@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import akka.http.scaladsl.model.Uri
 import akka.event.{LoggingAdapter,Logging}
+import com.databricks.industry.solutions.fhirapi.queries._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
