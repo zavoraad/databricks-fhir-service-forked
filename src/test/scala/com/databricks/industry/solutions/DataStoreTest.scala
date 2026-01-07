@@ -2,6 +2,7 @@ package com.databricks.industry.solutions.fhirapi
 
 import java.sql.Connection
 import org.scalatest._
+import com.databricks.industry.solutions.fhirapi.datastore.PoolDataStore
 
 
 class DataStoreTest extends BaseTest with BeforeAndAfter {

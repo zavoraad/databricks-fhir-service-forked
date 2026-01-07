@@ -5,6 +5,8 @@ import java.time.format.DateTimeFormatter
 import scala.collection.immutable.List
 import ujson.Obj
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import com.databricks.industry.solutions.fhirapi.queries._
+
 
 /* Spark DDL of this case class
 CREATE TABLE ... (

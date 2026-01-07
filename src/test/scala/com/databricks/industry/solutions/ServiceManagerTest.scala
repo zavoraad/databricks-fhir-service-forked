@@ -1,7 +1,7 @@
 package com.databricks.industry.solutions.fhirapi
 
 import org.joda.time.DateTime
-import com.databricks.industry.solutions.fhirapi.QueryOutput
+import com.databricks.industry.solutions.fhirapi.queries.QueryOutput
 
 class ServiceManagerTest extends BaseTest {
 

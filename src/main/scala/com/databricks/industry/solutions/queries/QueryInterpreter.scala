@@ -1,6 +1,7 @@
-package com.databricks.industry.solutions.fhirapi
+package com.databricks.industry.solutions.fhirapi.queries
 
 import com.databricks.client.jdbc.internal.fasterxml.jackson.databind.deser.ValueInstantiator.Base
+import com.databricks.industry.solutions.fhirapi.{Alias, BaseAlias}
 
 
 object QueryInterpreter {
