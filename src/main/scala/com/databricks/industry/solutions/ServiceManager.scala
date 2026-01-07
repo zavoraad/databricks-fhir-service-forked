@@ -14,7 +14,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
 
   def read(typeSeg: String, idSeg: String)(implicit url: Uri): FormattedOutput = {
     val sql = qi.read(typeSeg, idSeg, url.query().toMap)
-    val result = qr.runQuery(QueryInput(sql, url))
+    val result = qr.runQuery(QueryInput(sql, url, url.toString()))
     result.error match {
       case Some(x) => FormatManager.ErrorDefault(Seq(result))
       case None => FormatManager.fromResultsNDJson(Seq(result),
@@ -30,8 +30,8 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
     val queries = qi.readEverythingForPatient(
       patientId,
       {
-        qr.runQuery(QueryInput(qi.tablesWithColumns(Seq("subject", "patient", "beneficiary", "individual")))) match {
-          case qo if qo.error == None => qo.queryResults.map(row => (row.get("table_name").get, row.get("column_name").get))
+        qr.runQuery(QueryInput(qi.tablesWithColumns(Seq("subject", "patient", "beneficiary", "individual")), url, url.toString())) match {
+          case qo if qo.error == None => qo.queryResults.map(row => (row.result.get("table_name").get, row.result.get("column_name").get))
           case qo => return FormatManager.ErrorDefault(Seq(qo)) //Error reading metadata tables in UC of tables + columns
         }
       }
@@ -39,7 +39,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
 
     val futureResults = Future.traverse(queries) { query =>
       Future {
-        qr.runQuery(QueryInput(query, url))
+        qr.runQuery(QueryInput(query, url, url.toString()))
       }
     }
 
@@ -67,19 +67,19 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
 
   def allTablesInSchema: Seq[String] = {
     qr.runQuery(QueryInput(qi.allTablesInSchema))
-      .queryResults.map(row => row.getOrElse("tableName", ""))
+      .queryResults.map(row => row.result.getOrElse("tableName", ""))
       .filter(_!="")
   }
 
   def tableColumns(tableName: String): Seq[String] = {
     qr.runQuery(QueryInput(qi.tableSchema(tableName)))
-      .queryResults.map(row => row.getOrElse("column_name", ""))
+      .queryResults.map(row => row.result.getOrElse("column_name", ""))
       .filter(_!="")
   }
 
   def tablesWithColumns(columns: Seq[String]): Seq[(String, String)] = {
     qr.runQuery(QueryInput(qi.tablesWithColumns(columns), Uri("")))
-      .queryResults.map(row => (row.getOrElse("table_name", ""), row.getOrElse("column_name", "")))
+      .queryResults.map(row => (row.result.getOrElse("table_name", ""), row.result.getOrElse("column_name", "")))
       .filter( {case(t,_) => t != ""})
   }
 }
