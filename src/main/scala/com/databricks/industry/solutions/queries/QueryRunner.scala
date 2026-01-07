@@ -12,18 +12,27 @@ class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
   def runQuery(queryInput: QueryInput): QueryOutput = {
     val queryStartTime = DateTime.now
     val (results, error) = ds.execute(queryInput.query, queryRetries, ds.getConnection)
-    QueryOutput(results, System.currentTimeMillis() - queryStartTime.getMillis, queryStartTime, error, queryInput.query)
+    val wrappedResults = results.map(QueryResultRow(_))
+    QueryOutput(wrappedResults, 
+      System.currentTimeMillis() - queryStartTime.getMillis, 
+      queryStartTime, 
+      error, 
+      queryInput.query,
+      if (queryInput.fullUrl.nonEmpty) queryInput.fullUrl else queryInput.url.toString) // Capture the full URL string
   }
 }
 
-case class QueryInput(query: String, url: Uri = Uri(""))
+case class QueryInput(query: String, url: Uri = Uri(""), fullUrl: String = "")
+
+case class QueryResultRow(result: Map[String, String])
 
 case class QueryOutput(
-  queryResults: List[Map[String, String]], //rows of column name, value results
+  queryResults: List[QueryResultRow], //rows of column name, value results
   queryRuntime: Long,
   queryStartTime: DateTime,
   error: Option[String],
-  queryInput: String
+  queryInput: String,
+  url: String // Added full URL string
 ) {
   override def toString: String = {
     s"""queryRuntime (in ms): $queryRuntime
@@ -31,7 +40,8 @@ case class QueryOutput(
        |queryError: ${error.getOrElse("None")}
        |numRows: ${queryResults.length}
        |queryExecuted: $queryInput
-       |data: $queryResults
+       |url: $url
+       |data: ${queryResults.map(_.result)}
        |""".stripMargin
   }
 

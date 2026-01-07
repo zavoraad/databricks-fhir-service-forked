@@ -7,13 +7,15 @@ class FormatManagerSuite extends BaseTest {
 
   test("Test resourceAsNDJSON") {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
-    val queryResults = List(Map("Patient" -> fhirResourceJson), Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)), QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
       queryStartTime = DateTime.now(),
       error = None,
-      queryInput = "SELECT * FROM patients"
+      queryInput = "SELECT * FROM patients",
+      url = "http://localhost:9000/fhir/Patient"
     )
 
     val result = FormatManager.resourcesAsNDJSON(List(qo))
@@ -24,14 +26,15 @@ class FormatManagerSuite extends BaseTest {
 
   test("Test empty resourceAsNDJSON") {
     val fhirResourceJson = "" 
-
-    val queryResults = List(Map("Patient" -> fhirResourceJson), Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)), QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
       queryStartTime = DateTime.now(),
       error = None,
-      queryInput = "SELECT * FROM patients"
+      queryInput = "SELECT * FROM patients",
+      url = "http://localhost:9000/fhir/Patient"
     )
 
     val result = FormatManager.resourcesAsNDJSON(List(qo))
@@ -41,13 +44,15 @@ class FormatManagerSuite extends BaseTest {
 
   test("Test resourcesAsEntry") {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
-    val queryResults = List(Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
       queryStartTime = DateTime.now(),
       error = None,
-      queryInput = "SELECT * FROM patients WHERE id = '1'"
+      queryInput = "SELECT * FROM patients WHERE id = '1'",
+      url = "http://localhost:9000/fhir/Patient/1"
     )
 
     val result = FormatManager.resourcesAsEntry(qo)
@@ -62,14 +67,16 @@ class FormatManagerSuite extends BaseTest {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
     val resourceObj = ujson.read(fhirResourceJson)
     val entry = Seq(ujson.Obj("resource" -> resourceObj, "fullUrl" -> "urn:uuid:1"))
-    val queryResults = List(Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)))
 
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
       queryStartTime = DateTime.now(),
       error = None,
-      queryInput = "SELECT * FROM patients WHERE id = '1'"
+      queryInput = "SELECT * FROM patients WHERE id = '1'",
+      url = "http://localhost:9000/fhir/Patient/1"
     )
 
     val result = FormatManager.resourcesAsBundle(Seq(qo),transactionType="searchsets" )

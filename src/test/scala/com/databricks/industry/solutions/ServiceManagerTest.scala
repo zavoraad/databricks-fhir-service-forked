@@ -7,13 +7,15 @@ class ServiceManagerTest extends BaseTest {
 
   test("Test Error Handling in get request") {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
-    val queryResults = List(Map("Patient" -> fhirResourceJson), Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)), QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
       queryStartTime = DateTime.now(),
       error = Some("An erorr exists"),
-      queryInput = "SELECT * FROM patients"
+      queryInput = "SELECT * FROM patients",
+      url = "http://localhost:9000/fhir/Patient"
     )
 
     val result = FormatManager.resourcesAsNDJSON(List(qo))
@@ -24,13 +26,15 @@ class ServiceManagerTest extends BaseTest {
 
   test("Test sqlAlias Functions"){
     val fhirResourceJson = """{"resourceType": "Patient", "patientId": "123", "active": true}"""
-    val queryResults = List(Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 50,
       queryStartTime = DateTime.now(),
       error = None,
-      queryInput = "SELECT * FROM patients"
+      queryInput = "SELECT * FROM patients",
+      url = "http://localhost:9000/fhir/Patient"
     )
 
     // Create an alias to rename "id" to "patientId"
@@ -47,13 +51,15 @@ class ServiceManagerTest extends BaseTest {
 
   test("Test resourcesAsBundle with sqlAlias") {
     val fhirResourceJson = """{"resourceType": "Patient", "id": "123", "isActive": true}"""
-    val queryResults = List(Map("Patient" -> fhirResourceJson))
+    import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
+    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 50,
       queryStartTime = DateTime.now(),
       error = None,
-      queryInput = "SELECT * FROM patients"
+      queryInput = "SELECT * FROM patients",
+      url = "http://localhost:9000/fhir/Patient"
     )
 
     // Create an alias to rename "active" to "isActive"

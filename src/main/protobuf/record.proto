@@ -2,20 +2,48 @@ syntax = "proto3";
 
 package com.databricks.industry.solutions.fhirapi;
 
+/*
+
+TABLE SCHEMA:
+CREATE TABLE hls_healthcare.databricks_fhir_service_forked.log_data (
+  queryOutput ARRAY<STRUCT<
+    queryResults: ARRAY<STRUCT<result MAP<STRING, STRING>>>,
+    queryRuntime: BIGINT,
+    queryStartTime: STRING,
+    error: STRING,
+    queryInput: STRING,
+    url: STRING
+  >>,
+  data STRING,
+  statusCd STRING
+);
+
+Mapping:
+- ARRAY<STRUCT<result MAP<...>>> = repeated QueryResult
+- result MAP<STRING, STRING> = repeated KeyValuePair (protobuf representation)
+
+*/
+
 message LogData {
-  repeated QueryOutputProto query_output = 1;
+  // Represents a single query result row (one map)
+  // Maps to: STRUCT<result MAP<STRING, STRING>>
+  message QueryResult {
+    // The "result" field as native proto3 map type
+    map<string, string> result = 1;
+  }
+
+  // Nested message for query output
+  message QueryOutputProto {
+    // queryResults: ARRAY<STRUCT<result MAP<STRING, STRING>>>
+    repeated QueryResult queryResults = 1;
+    int64 queryRuntime = 2;
+    string queryStartTime = 3;
+    string error = 4;
+    string queryInput = 5;
+    string url = 6;  // Added URL field
+  }
+
+  repeated QueryOutputProto queryOutput = 1;
   string data = 2;
-  string status_cd = 3;
-}
-
-message QueryOutputProto {
-  repeated MapStringString query_results = 1;
-  int64 query_runtime = 2;
-  string query_start_time = 3;
-  optional string error = 4;
-  string query_input = 5;
-}
-
-message MapStringString {
-  map<string, string> values = 1;
+  string statusCd = 3;
 }

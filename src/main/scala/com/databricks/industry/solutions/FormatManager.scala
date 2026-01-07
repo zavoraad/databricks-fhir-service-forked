@@ -90,8 +90,8 @@ object FormatManager {
         columns match {
             case Some(c)  => ???
             case None => {
-                qo.queryResults.flatMap(t => 
-                    t.values
+                qo.queryResults.flatMap(row => 
+                    row.result.values
                     .filter(s => s.length > 0)
                     .map(x => ujson.read(x))
                     .map(j => ujsonWithAlias(j, sqlAlias))
@@ -117,8 +117,8 @@ object FormatManager {
         columns match {
             case Some(c) => ???
             case None => { //builds entry
-                qo.queryResults.flatMap(t => 
-                    t.values
+                qo.queryResults.flatMap(row => 
+                    row.result.values
                         .filter(s => s.length > 0)
                         .map(s => ujson.read(s))
                         .map(j => ujsonWithAlias(j, sqlAlias))
