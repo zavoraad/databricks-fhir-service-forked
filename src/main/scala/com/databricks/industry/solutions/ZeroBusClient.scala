@@ -31,6 +31,7 @@ class ZeroBusClient(val serverEndpoint: String,
   lazy val stream = sdk.createStream(table.asInstanceOf[TableProperties[com.google.protobuf.Message]], clientId, clientSecret, opts).join
   
   def ingest(record: String): Future[Unit] = Future {
+    //TODO need to add UUID due to Zerobus guarantee of just "deliver at least once"
     val builder = defaultInstance.newBuilderForType()
     JsonFormat
       .parser()

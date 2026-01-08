@@ -60,7 +60,7 @@ trait FhirService {
           )
       ),
       sqlAlias = Option(BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate").asInstanceOf[BaseAlias])
-    )
+    )(executor) // Pass the executor here
    }
 
   val routes: Route = {
@@ -81,8 +81,9 @@ trait FhirService {
             pathPrefix(Segment) { idSeg =>
               get {
                 extractUri { uri =>
-                  val result = service.read(typeSeg, idSeg)(uri)
-                  complete{ result.queryOutput.toString  }
+                  onSuccess(service.read(typeSeg, idSeg)(uri)) { result =>
+                    complete(result.queryOutput.toString)
+                  }
                 }
               }
             }
@@ -95,9 +96,10 @@ trait FhirService {
             pathPrefix("patient" / Segment / "$everything") { patientId =>
               get {
                 extractUri { uri =>
-                  val result = service.getEverything(patientId)(uri)
-                  logger.info(result.asJson.noSpaces)
-                  complete(result.statusCd, result.data)
+                  onSuccess(service.getEverything(patientId)(uri)) { result =>
+                    logger.info(result.asJson.noSpaces)
+                    complete(result.statusCd, result.data)
+                  }
                 }
               }
             },
@@ -106,9 +108,10 @@ trait FhirService {
                 pathPrefix(Segment) { idSeg => 
                   get {  //read https://build.fhir.org/http.html#read
                    extractUri { uri =>
-                     val result = service.read(typeSeg, idSeg)(uri)
-                     logger.info(result.asJson.noSpaces)
-                     complete(result.statusCd, result.data)
+                     onSuccess(service.read(typeSeg, idSeg)(uri)) { result =>
+                       logger.info(result.asJson.noSpaces)
+                       complete(result.statusCd, result.data)
+                     }
                     }
                   }
                 },

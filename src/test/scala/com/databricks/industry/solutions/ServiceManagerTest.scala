@@ -3,6 +3,9 @@ package com.databricks.industry.solutions.fhirapi
 import org.joda.time.DateTime
 import com.databricks.industry.solutions.fhirapi.queries.QueryOutput
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 class ServiceManagerTest extends BaseTest {
 
   test("Test Error Handling in get request") {
@@ -18,7 +21,8 @@ class ServiceManagerTest extends BaseTest {
       url = "http://localhost:9000/fhir/Patient"
     )
 
-    val result = FormatManager.resourcesAsNDJSON(List(qo))
+    val resultFuture = FormatManager.resourcesAsNDJSON(List(qo))
+    val result = resultFuture // resourcesAsNDJSON is still synchronous
     val expected = """{"resourceType":"Patient","id":"1","name":[{"family":"Test","given":["Patient"]}]}
 {"resourceType":"Patient","id":"1","name":[{"family":"Test","given":["Patient"]}]}"""
     assert(result == expected)
