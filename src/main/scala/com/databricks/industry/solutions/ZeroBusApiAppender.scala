@@ -13,7 +13,6 @@ class ZeroBusApiAppender (val client: ZeroBusClient) extends UnsynchronizedAppen
 
     // 3. Send (Fire and Forget)
     try {
-      System.out.println("It's shappening!!!")
       client.ingest(event.getFormattedMessage)
     } catch {
       case e: Exception => 

@@ -10,9 +10,9 @@ import com.databricks.industry.solutions.fhirapi.queries._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
-class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Option[BaseAlias] = None) {
+class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Option[BaseAlias] = None)(implicit val executor: ExecutionContext) {
 
-  def read(typeSeg: String, idSeg: String)(implicit url: Uri): FormattedOutput = {
+  def read(typeSeg: String, idSeg: String)(implicit url: Uri): Future[FormattedOutput] = Future {
     val sql = qi.read(typeSeg, idSeg, url.query().toMap)
     val result = qr.runQuery(QueryInput(sql, url, url.toString()))
     result.error match {
@@ -22,39 +22,46 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
     }    
   }
 
-  def insert(typeSeg: String, idSeg: String, payload: String)(implicit url: Uri): FormattedOutput = {
-    ???
+  def insert(typeSeg: String, idSeg: String, payload: String)(implicit url: Uri): Future[FormattedOutput] = {
+    Future.failed(new NotImplementedError("Insert not implemented"))
   }
 
-  def getEverything(patientId: String)(implicit url: Uri): FormattedOutput = {
-    val queries = qi.readEverythingForPatient(
-      patientId,
-      {
-        qr.runQuery(QueryInput(qi.tablesWithColumns(Seq("subject", "patient", "beneficiary", "individual")), url, url.toString())) match {
-          case qo if qo.error == None => qo.queryResults.map(row => (row.result.get("table_name").get, row.result.get("column_name").get))
-          case qo => return FormatManager.ErrorDefault(Seq(qo)) //Error reading metadata tables in UC of tables + columns
-        }
+  def getEverything(patientId: String)(implicit url: Uri): Future[FormattedOutput] = {
+    // 1. Run the metadata query to find relevant tables/columns
+    val metadataQuery = qi.tablesWithColumns(Seq("subject", "patient", "beneficiary", "individual"))
+    
+    Future {
+      qr.runQuery(QueryInput(metadataQuery, url, url.toString()))
+    }.flatMap { metadataResult =>
+      metadataResult.error match {
+        case Some(_) => Future.successful(FormatManager.ErrorDefault(Seq(metadataResult)))
+        case None =>
+          // 2. Generate list of data queries
+          val info = metadataResult.queryResults.map(row => (row.result.get("table_name").get, row.result.get("column_name").get))
+          val queries = qi.readEverythingForPatient(patientId, info)
+
+          // 3. Run all data queries in parallel
+          val futureResults = Future.traverse(queries) { query =>
+            Future {
+              qr.runQuery(QueryInput(query, url, url.toString()))
+            }
+          }
+
+          // 4. Format the final results
+          futureResults.map { results =>
+            results.filter(qo => qo.error != None) match {
+              case l if l.size > 0 => FormatManager.ErrorDefault(results)
+              case _ =>
+                FormatManager.fromResultsBundle(
+                  results,
+                  FormatManager.resourcesAsBundle,
+                  None,
+                  "searchset",
+                  sqlAlias
+                )
+            }
+          }
       }
-    )
-
-    val futureResults = Future.traverse(queries) { query =>
-      Future {
-        qr.runQuery(QueryInput(query, url, url.toString()))
-      }
-    }
-
-    val results = Await.result(futureResults, 30.seconds)
-
-    results.filter(qo => qo.error != None) match {
-      case l if l.size > 0 => FormatManager.ErrorDefault(results)
-      case _ =>
-        FormatManager.fromResultsBundle(
-          results,
-          FormatManager.resourcesAsBundle,
-          None,
-          "searchset",
-          sqlAlias
-        )
     }
   }
 
