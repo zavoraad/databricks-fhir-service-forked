@@ -31,15 +31,21 @@ class ZeroBusClient(val serverEndpoint: String,
   lazy val stream = sdk.createStream(table.asInstanceOf[TableProperties[com.google.protobuf.Message]], clientId, clientSecret, opts).join
   
   def ingest(record: String): Future[Unit] = Future {
-    //TODO need to add UUID due to Zerobus guarantee of just "deliver at least once"
     val builder = defaultInstance.newBuilderForType()
     JsonFormat
       .parser()
       .ignoringUnknownFields()
       .merge(record, builder)
-    // 3. Parse JSON into the builder
-     stream.ingestRecord(builder.build())
     
+    // 3. Set a unique ingestId for deduplication
+    val ingestId = java.util.UUID.randomUUID().toString
+    val ingestIdField = builder.getDescriptorForType.findFieldByName("uuid_ingest_id")
+    if (ingestIdField != null) {
+      builder.setField(ingestIdField, ingestId)
+    }
+
+    // 4. Ingest the record
+    stream.ingestRecord(builder.build())
   }
 }
 
