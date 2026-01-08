@@ -15,7 +15,8 @@ CREATE TABLE hls_healthcare.databricks_fhir_service_forked.log_data (
     url: STRING
   >>,
   data STRING,
-  statusCd STRING
+  statusCd STRING,
+  uuid_ingest_id STRING
 );
 
 Mapping:
@@ -40,10 +41,11 @@ message LogData {
     string queryStartTime = 3;
     string error = 4;
     string queryInput = 5;
-    string url = 6;  // Added URL field
+    string url = 6;
   }
 
   repeated QueryOutputProto queryOutput = 1;
   string data = 2;
   string statusCd = 3;
+  string uuid_ingest_id = 4; // Unique ID for deduplication
 }
