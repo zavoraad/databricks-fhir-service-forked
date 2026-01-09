@@ -6,6 +6,7 @@ import scala.util.{Failure, Success}
 import akka.http.scaladsl.model.Uri
 import akka.event.{LoggingAdapter,Logging}
 import com.databricks.industry.solutions.fhirapi.queries._
+import ujson._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -40,20 +41,71 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
           val info = metadataResult.queryResults.map(row => (row.result.get("table_name").get, row.result.get("column_name").get))
           val queries = qi.readEverythingForPatient(patientId, info)
 
-          // 3. Run all data queries in parallel
-          val futureResults = Future.traverse(queries) { query =>
+          // 3. Run all data queries in parallel (Pass 1)
+          val futurePass1Results = Future.traverse(queries) { query =>
             Future {
               qr.runQuery(QueryInput(query, url, url.toString()))
             }
           }
 
-          // 4. Format the final results
-          futureResults.map { results =>
-            results.filter(qo => qo.error != None) match {
-              case l if l.size > 0 => FormatManager.ErrorDefault(results)
+          // 4. Extract references for Pass 2 (e.g., Practitioners from Encounters)
+          futurePass1Results.flatMap { pass1Results =>
+            val practitionerQueries = pass1Results.flatMap { qo =>
+              // Look specifically for results coming from an 'Encounter' query
+              if (qo.queryInput.toLowerCase.contains("encounter")) {
+                qo.queryResults.flatMap { row =>
+                  try {
+                    // Each row contains a JSON string of the resource
+                    val jsonStr = row.result.values.head
+                    val json = ujson.read(jsonStr)
+                    
+                    // FHIR Path: participant.individual.reference
+                    json("participant").arr.flatMap { p =>
+                      val ref = p("individual")("reference").str
+                      if (ref.startsWith("Practitioner/")) {
+                        // Case 1: Simple logical ID reference
+                        Some(qi.read("Practitioner", ref.stripPrefix("Practitioner/"), Map.empty))
+                      } else if (ref.startsWith("Practitioner?")) {
+                        // Case 2: Conditional reference (search-style)
+                        // Example: "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|9999995597"
+                        val queryStr = ref.stripPrefix("Practitioner?")
+                        val params = queryStr.split("&").flatMap { pair =>
+                          val parts = pair.split("=")
+                          if (parts.length >= 2) {
+                            val key = parts(0)
+                            val rawValue = java.net.URLDecoder.decode(parts(1), "UTF-8")
+                            Some(key -> rawValue)
+                          } else None
+                        }.toMap
+                        Some(qi.searchWithArrayFilter("Practitioner", params))
+                      } else None
+                    }
+                  } catch {
+                    case _: Exception => Nil
+                  }
+                }
+              } else Nil
+            }.distinct
+
+            if (practitionerQueries.nonEmpty) {
+              // 5. Run Pass 2 queries for referenced Practitioners
+              val futurePass2Results = Future.traverse(practitionerQueries) { query =>
+                Future {
+                  qr.runQuery(QueryInput(query, url, url.toString()))
+                }
+              }
+              
+              futurePass2Results.map(pass2 => pass1Results ++ pass2)
+            } else {
+              Future.successful(pass1Results)
+            }
+          }.map { allResults =>
+            // 6. Format the combined results from both passes
+            allResults.filter(qo => qo.error != None) match {
+              case l if l.size > 0 => FormatManager.ErrorDefault(allResults)
               case _ =>
                 FormatManager.fromResultsBundle(
-                  results,
+                  allResults,
                   FormatManager.resourcesAsBundle,
                   None,
                   "searchset",
