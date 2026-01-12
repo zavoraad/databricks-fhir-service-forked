@@ -117,8 +117,14 @@ trait FhirService {
                 },
                  //create https://build.fhir.org/http.html#create
                 post {
-
-                  ???
+                  entity(as[String]) { payload =>
+                    extractUri { uri =>
+                      onSuccess(service.insert(payload)(uri)) { result =>
+                        logger.info(result.asJson.noSpaces)
+                        complete(result.statusCd, result.data)
+                      }
+                    }
+                  }
                 }
             )
             },

@@ -23,8 +23,21 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
     }    
   }
 
-  def insert(typeSeg: String, idSeg: String, payload: String)(implicit url: Uri): Future[FormattedOutput] = {
-    Future.failed(new NotImplementedError("Insert not implemented"))
+  def insert(payload: String)(implicit url: Uri): Future[FormattedOutput] = Future {
+    try {
+      val json = ujson.read(payload)
+      val resourceType = json("resourceType").str
+      val sql = qi.insert(resourceType, payload)
+      val result = qr.runQuery(QueryInput(sql, url, url.toString()))
+      result.error match {
+        case Some(_) => FormatManager.ErrorDefault(Seq(result))
+        case None => FormattedOutput(Seq(result), s"$resourceType created successfully", akka.http.scaladsl.model.StatusCodes.Created)
+      }
+    } catch {
+      case e: Exception => 
+        val errorResult = QueryOutput(Nil, 0, org.joda.time.DateTime.now(), Some(s"Invalid JSON or missing resourceType: ${e.getMessage}"), "", url.toString())
+        FormatManager.ErrorDefault(Seq(errorResult))
+    }
   }
 
   def getEverything(patientId: String)(implicit url: Uri): Future[FormattedOutput] = {

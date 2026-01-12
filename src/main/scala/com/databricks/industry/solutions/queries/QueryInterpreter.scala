@@ -71,6 +71,13 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
       info.map((table, column) => 
         search(table, Map(column -> {dollarEverything.translate("prefix") + patientId})))
   }
+
+  def insert(resource: String, payload: String): String = {
+    // Generate an INSERT statement that parses the JSON payload into the table structure
+    // Using from_json with schema_of_json to dynamically map JSON to table schema
+    s"INSERT INTO $catalog.$schema.$resource SELECT * FROM (SELECT from_json('$payload', schema_of_json('$payload')))"
+  }
+
   /* 
     build the where clause for any query
     Encounter/?subject=123
