@@ -29,7 +29,7 @@ class ZeroBusClient(val serverEndpoint: String,
                     response.getDurabilityAckUpToOffset()))
             .build()
   lazy val stream = sdk.createStream(table.asInstanceOf[TableProperties[com.google.protobuf.Message]], clientId, clientSecret, opts).join
-  
+
   def ingest(record: String): Future[Unit] = Future {
     val builder = defaultInstance.newBuilderForType()
     JsonFormat
