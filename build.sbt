@@ -1,8 +1,8 @@
 import sbt.librarymanagement.ConflictWarning
 import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
 
-enablePlugins(JavaAppPackaging)
-enablePlugins(DockerPlugin)
+
+enablePlugins(JavaAppPackaging, DockerPlugin, GitVersioning)
 conflictWarning := ConflictWarning.disable
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -42,7 +42,10 @@ libraryDependencies ++= {
     "io.grpc" % "grpc-protobuf" % grpcV,
     "io.grpc" % "grpc-stub" % grpcV,
     "ch.qos.logback.contrib" % "logback-json-classic" % "0.1.5",
-    "org.scalatest"     %% "scalatest" % scalaTestV % "test"
+    "org.scalatest"     %% "scalatest" % scalaTestV % "test",
+    "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.41.4" % "test",
+    "com.dimafeng" %% "testcontainers-scala-core" % "0.41.4" % "test",
+    "com.softwaremill.sttp.client3" %% "core" % "3.9.7" % "test"
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
@@ -78,16 +81,31 @@ javacOptions ++= Seq("-source", "17", "-target", "17")
 
 assembly / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
 assembly / assemblyMergeStrategy := {
-    case PathList("META-INF", xs@_*) => MergeStrategy.discard
+    case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
+    case PathList("META-INF", xs @ _*) =>
+      xs map { _.toLowerCase } match {
+        case "manifest.mf" :: Nil | "index.list" :: Nil | "dependencies" :: Nil =>
+          MergeStrategy.discard
+        case ps @ x :: xs if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") || ps.last.endsWith(".rsa") =>
+          MergeStrategy.discard
+        case "plexus" :: xs =>
+          MergeStrategy.discard
+        case "services" :: xs =>
+          MergeStrategy.concat
+        case "spring.schemas" :: Nil | "spring.handlers" :: Nil =>
+          MergeStrategy.concat
+        case _ => MergeStrategy.first
+      }
     case PathList("reference.conf") => MergeStrategy.concat
     case PathList("application.conf") => MergeStrategy.concat
     case x => MergeStrategy.first
 }
 
 
-enablePlugins(GitVersioning)
 import sbt.Package.ManifestAttributes
 
 Docker / packageName := "databricks-fhir-api"
+dockerBaseImage := "eclipse-temurin:17-jre" 
 Docker / dockerExposedPorts := Seq(9000) //expose port 9000 in the docker image
 Docker / version := git.gitHeadCommit.value.get
+addCommandAlias("testDocker", ";docker:publishLocal; testOnly *DockerIntegrationTest")

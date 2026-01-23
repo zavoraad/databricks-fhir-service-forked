@@ -31,10 +31,10 @@ message LogData {
   message QueryResult {
     // The "result" field as native proto3 map type
     map<string, string> result = 1;
-  }
+}
 
   // Nested message for query output
-  message QueryOutputProto {
+message QueryOutputProto {
     // queryResults: ARRAY<STRUCT<result MAP<STRING, STRING>>>
     repeated QueryResult queryResults = 1;
     int64 queryRuntime = 2;

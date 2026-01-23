@@ -97,8 +97,8 @@ trait FhirService {
               get {
                 extractUri { uri =>
                   onSuccess(service.getEverything(patientId)(uri)) { result =>
-                    logger.info(result.asJson.noSpaces)
-                    complete(result.statusCd, result.data)
+                  logger.info(result.asJson.noSpaces)
+                  complete(result.statusCd, result.data)
                   }
                 }
               }
@@ -109,8 +109,8 @@ trait FhirService {
                   get {  //read https://build.fhir.org/http.html#read
                    extractUri { uri =>
                      onSuccess(service.read(typeSeg, idSeg)(uri)) { result =>
-                       logger.info(result.asJson.noSpaces)
-                       complete(result.statusCd, result.data)
+                     logger.info(result.asJson.noSpaces)
+                     complete(result.statusCd, result.data)
                      }
                     }
                   }

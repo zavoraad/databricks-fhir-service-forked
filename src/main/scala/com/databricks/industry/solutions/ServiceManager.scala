@@ -103,11 +103,11 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
             if (practitionerQueries.nonEmpty) {
               // 5. Run Pass 2 queries for referenced Practitioners
               val futurePass2Results = Future.traverse(practitionerQueries) { query =>
-                Future {
+      Future {
                   qr.runQuery(QueryInput(query, url, url.toString()))
-                }
-              }
-              
+      }
+    }
+
               futurePass2Results.map(pass2 => pass1Results ++ pass2)
             } else {
               Future.successful(pass1Results)
@@ -116,14 +116,14 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
             // 6. Format the combined results from both passes
             allResults.filter(qo => qo.error != None) match {
               case l if l.size > 0 => FormatManager.ErrorDefault(allResults)
-              case _ =>
-                FormatManager.fromResultsBundle(
+      case _ =>
+        FormatManager.fromResultsBundle(
                   allResults,
-                  FormatManager.resourcesAsBundle,
-                  None,
-                  "searchset",
-                  sqlAlias
-                )
+          FormatManager.resourcesAsBundle,
+          None,
+          "searchset",
+          sqlAlias
+        )
             }
           }
       }
