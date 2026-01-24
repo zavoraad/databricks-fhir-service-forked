@@ -22,7 +22,7 @@ libraryDependencies ++= {
   val circeV         = "0.14.9"
   val scalaTestV     = "3.2.19"
   val akkaHttpCirceV = "1.39.2"
-  val grpcV          = "1.68.1"
+  val grpcV          = "1.76.1"
 
   Seq(
     "com.databricks"    % "databricks-jdbc" % "2.6.40",
@@ -30,7 +30,7 @@ libraryDependencies ++= {
     //"com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
     //"com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.0",
     "joda-time"         % "joda-time"       % "2.12.7",
-    "ch.qos.logback"    % "logback-classic"  % "1.5.18",
+    "ch.qos.logback"    % "logback-classic"  % "1.5.25",
     "io.circe"          %% "circe-core" % circeV,
     "io.circe"          %% "circe-parser" % circeV,
     "io.circe"          %% "circe-generic" % circeV,
