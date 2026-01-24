@@ -1,11 +1,17 @@
 package com.databricks.industry.solutions.fhirapi
 
 import com.dimafeng.testcontainers.{GenericContainer, ForAllTestContainer}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 import org.testcontainers.containers.wait.strategy.Wait
 import sttp.client3._
 
-class DockerIntegrationTest extends AnyFunSuite with ForAllTestContainer {
+class DockerIntegrationTest extends AnyFunSuite with ForAllTestContainer with BeforeAndAfterAll {
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    System.setProperty("api.version", "1.44")
+  }
 
   // Use the image name defined in build.sbt
   override val container: GenericContainer = GenericContainer(
