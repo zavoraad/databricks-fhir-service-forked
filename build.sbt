@@ -45,7 +45,9 @@ libraryDependencies ++= {
     "org.scalatest"     %% "scalatest" % scalaTestV % "test",
     "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.41.4" % "test",
     "com.dimafeng" %% "testcontainers-scala-core" % "0.41.4" % "test",
-    "com.softwaremill.sttp.client3" %% "core" % "3.9.7" % "test"
+    "com.softwaremill.sttp.client3" %% "core" % "3.9.7" % "test",
+    "com.softwaremill.sttp.client4" %% "core" % "4.0.15",
+    "com.softwaremill.sttp.client4" %% "circe" % "4.0.15",
   ) ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,

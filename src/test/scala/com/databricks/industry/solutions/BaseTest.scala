@@ -11,9 +11,12 @@ class BaseTest extends AnyFunSuite{
   def config = ConfigFactory.load()
   def ta: TokenAuth = TokenAuth(config.getString("databricks.warehouse.usertoken.auth.jdbc"), config.getString("databricks.warehouse.usertoken.auth.token"))
   def spa: ServicePrincipalAuth = ServicePrincipalAuth(
-    config.getString("databricks.warehouse.serviceprincipal.auth.url"),
+    config.getString("databricks.warehouse.serviceprincipal.auth.jdbc"),
     config.getString("databricks.warehouse.serviceprincipal.auth.http_path"),
-    config.getString("databricks.warehouse.serviceprincipal.auth.auth_accesstoken")
+    config.getString("databricks.warehouse.serviceprincipal.auth.client_id"),
+    config.getString("databricks.warehouse.serviceprincipal.auth.client_secret"),
+    config.getString("databricks.warehouse.serviceprincipal.auth.url")
+    
   )
   def canConnect: Boolean = {
     try{

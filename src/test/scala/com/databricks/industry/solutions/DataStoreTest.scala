@@ -16,7 +16,8 @@ class DataStoreTest extends BaseTest with BeforeAndAfter {
       c.close()
       assert(true)
     } catch {
-      case _: Exception => fail("Service principal auth failed to connect")
+      case e: Exception =>
+        fail(s"Service principal auth failed to connect using ${spa.toString}: ${e.getMessage}", e)
     }
   }
 
