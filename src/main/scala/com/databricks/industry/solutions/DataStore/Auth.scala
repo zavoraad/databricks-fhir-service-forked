@@ -1,6 +1,7 @@
 package com.databricks.industry.solutions.fhirapi.datastore
 
-import java.sql.{Connection,DriverManager}
+import java.sql.{Connection, DriverManager}
+import java.util.Properties
 
 /**
   * Defines a generic authentication trait for establishing database connections.
@@ -42,9 +43,22 @@ class TokenAuth(val jdbcURL: String, val token: String) extends Auth {
     */
   def connect: Connection = {
     Class.forName("com.databricks.client.jdbc.Driver")
-    jdbcURL.takeRight(1) match {
-      case ";" =>     DriverManager.getConnection(jdbcURL + "UID=token;PWD=" + token)
-      case _ =>  DriverManager.getConnection(jdbcURL + ";UID=token;PWD=" + token)
-    }
+    val props = new Properties()
+    props.setProperty("UID", "token")
+    props.setProperty("PWD", token)
+    DriverManager.getConnection(jdbcURL, props)
+  }
+}
+
+//https://docs.databricks.com/aws/en/integrations/jdbc/authentication#oauth-20-tokens
+class ServicePrincipalAuth(val url: String, val httpPath: String, val token: String) extends Auth {
+  def connect: Connection = {
+    Class.forName("com.databricks.client.jdbc.Driver")
+    val props = new Properties()
+    props.setProperty("httpPath", httpPath)
+    props.setProperty("AuthMetch", "11")
+    props.setProperty("Auth_Flow", "0")
+    props.setProperty("Auth_AccessToken", token)
+    DriverManager.getConnection(url, props)
   }
 }

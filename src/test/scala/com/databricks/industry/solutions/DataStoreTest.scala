@@ -10,6 +10,16 @@ class DataStoreTest extends BaseTest with BeforeAndAfter {
     assert(canConnect)
   }
 
+  test("ServicePrincipalAuth Connectivity"){
+    try {
+      val c = spa.connect
+      c.close()
+      assert(true)
+    } catch {
+      case _: Exception => fail("Service principal auth failed to connect")
+    }
+  }
+
   test("SimpleDataStore Connectivity"){
     assume(canConnect, "Not able to connect to a Databricks resource")
   }

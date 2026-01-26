@@ -2,14 +2,19 @@ package com.databricks.industry.solutions.fhirapi
 
 import org.scalatest.funsuite.AnyFunSuite
 import com.typesafe.config.ConfigFactory
-import com.databricks.industry.solutions.fhirapi.datastore.TokenAuth
+import com.databricks.industry.solutions.fhirapi.datastore.{ServicePrincipalAuth, TokenAuth}
 import com.databricks.industry.solutions.fhirapi.ZeroBusClient
 import com.google.protobuf.Message
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class BaseTest extends AnyFunSuite{
   def config = ConfigFactory.load()
-  def ta: TokenAuth = TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token"))
+  def ta: TokenAuth = TokenAuth(config.getString("databricks.warehouse.usertoken.auth.jdbc"), config.getString("databricks.warehouse.usertoken.auth.token"))
+  def spa: ServicePrincipalAuth = ServicePrincipalAuth(
+    config.getString("databricks.warehouse.serviceprincipal.auth.url"),
+    config.getString("databricks.warehouse.serviceprincipal.auth.http_path"),
+    config.getString("databricks.warehouse.serviceprincipal.auth.auth_accesstoken")
+  )
   def canConnect: Boolean = {
     try{
       val c = ta.connect
