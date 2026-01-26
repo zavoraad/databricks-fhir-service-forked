@@ -51,7 +51,7 @@ trait FhirService {
       BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate"),
       BaseAlias.fromConfig(config, "databricks.alias.dollareverything")),
       new QueryRunner(
-        PoolDataStore(TokenAuth(config.getString("databricks.warehouse.jdbc"), config.getString("databricks.warehouse.token")),
+        PoolDataStore(TokenAuth(config.getString("databricks.warehouse.usertoken.auth.jdbc"), config.getString("databricks.warehouse.usertoken.auth.token")),
           conRetries = config.getInt("api.jdbc.hikari.connectionRetries"), 
           queryRetries = config.getInt("api.jdbc.hikari.queryRetries"),
           minIdle = config.getInt("api.jdbc.hikari.minIdle"),

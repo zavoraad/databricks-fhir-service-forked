@@ -116,8 +116,7 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
             // 6. Format the combined results from both passes
             allResults.filter(qo => qo.error != None) match {
               case l if l.size > 0 => FormatManager.ErrorDefault(allResults)
-      case _ =>
-        FormatManager.fromResultsBundle(
+      case _ => FormatManager.fromResultsBundle(
                   allResults,
           FormatManager.resourcesAsBundle,
           None,
