@@ -2,10 +2,13 @@ package com.databricks.industry.solutions.fhirapi
 
 import java.sql.Connection
 import org.scalatest._
+import ch.qos.logback.classic.{Level, LoggerContext}
+import org.slf4j.LoggerFactory
 import com.databricks.industry.solutions.fhirapi.datastore.PoolDataStore
 
 
-class DataStoreTest extends BaseTest with BeforeAndAfter {
+class DataStoreTest extends BaseTest with BeforeAndAfter with BeforeAndAfterAll {
+
   test("TokenAuth Connectivity"){
     assert(canConnect)
   }
@@ -29,7 +32,20 @@ class DataStoreTest extends BaseTest with BeforeAndAfter {
     assume(canConnect, "Not able to connect to a Databricks resource")
   }
 
-  test("Resources are properly released"){
+  test("Resources are properly released with TokenAuth"){
+    assume(canConnect, "Not able to connect to a Databricks resource")
+    val pool = new PoolDataStore(ta)
+    try {
+      for (i <- 1 to 100) {
+        val (_, error) = pool.execute("SELECT 1", 1, pool.getConnection)
+        assert(error.isEmpty, s"Query failed on iteration $i with error: ${error.getOrElse("")}")
+      }
+    } finally {
+      pool.disconnect
+    }
+  }
+
+  test("Resources are properly released with ServicePrincipalAuth"){
     assume(canConnect, "Not able to connect to a Databricks resource")
     val pool = new PoolDataStore(ta)
     try {

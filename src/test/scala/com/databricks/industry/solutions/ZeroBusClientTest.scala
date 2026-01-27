@@ -1,6 +1,8 @@
 package com.databricks.industry.solutions.fhirapi
 
 import org.scalatest._
+import ch.qos.logback.classic.{Level, LoggerContext}
+import org.slf4j.LoggerFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{Success, Failure}
@@ -11,7 +13,7 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import org.joda.time.DateTime
 import com.databricks.industry.solutions.fhirapi.queries.{QueryOutput, QueryResultRow}
 
-class ZeroBusClientTest extends BaseTest {
+class ZeroBusClientTest extends BaseTest with BeforeAndAfterAll {
   
   // Custom encoders for Joda DateTime and Akka StatusCode for Circe serialization
   implicit val jodaDateTimeEncoder: Encoder[DateTime] = Encoder.encodeString.contramap[DateTime](_.toString)
