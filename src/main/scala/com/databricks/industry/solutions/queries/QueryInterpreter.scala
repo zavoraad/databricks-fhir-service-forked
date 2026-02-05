@@ -30,6 +30,12 @@ class QueryInterpreter(val catalog: String,
     " WHERE " + sqlAlias.translate("id") + " = '" + id + "'".stripMargin
   }
 
+  // FHIR delete: hard-delete by id
+  def delete(resource: String, id: String, params: Map[String, String]): String = {
+    "DELETE FROM " + catalog + "." + schema + "." + resource +
+    " WHERE " + sqlAlias.translate("id") + " = '" + id + "'".stripMargin
+  }
+
 /* 
 e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.May.2009'
   Array(params['onset', '23.May.2009'])

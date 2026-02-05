@@ -57,4 +57,5 @@ class DataStoreTest extends BaseTest with BeforeAndAfter with BeforeAndAfterAll 
       pool.disconnect
     }
   }
+
 }

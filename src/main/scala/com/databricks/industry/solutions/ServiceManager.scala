@@ -23,12 +23,22 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
     }    
   }
 
+  def delete(typeSeg: String, idSeg: String)(implicit url: Uri): Future[FormattedOutput] = Future {
+    val sql = qi.delete(typeSeg, idSeg, url.query().toMap)
+    val result = qr.runUpdate(QueryInput(sql, url, url.toString()))
+    result.error match {
+      case Some(_) => FormatManager.ErrorDefault(Seq(result))
+      case None => FormatManager.fromResultsDelete(Seq(result),
+        FormatManager.resourcesAsNDJSON, None, sqlAlias)
+    }
+  }
+
   def insert(payload: String)(implicit url: Uri): Future[FormattedOutput] = Future {
     try {
       val json = ujson.read(payload)
       val resourceType = json("resourceType").str
       val sql = qi.insert(resourceType, payload)
-      val result = qr.runQuery(QueryInput(sql, url, url.toString()))
+      val result = qr.runUpdate(QueryInput(sql, url, url.toString()))
       result.error match {
         case Some(_) => FormatManager.ErrorDefault(Seq(result))
         case None => FormattedOutput(Seq(result), s"$resourceType created successfully", akka.http.scaladsl.model.StatusCodes.Created)

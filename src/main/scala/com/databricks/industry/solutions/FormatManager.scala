@@ -31,6 +31,20 @@ case class FormattedOutput(queryOutput: Seq[QueryOutput], data: String, statusCd
 
 object FormatManager {
 
+    protected def formatException(results: Seq[QueryOutput], sqlAlias: Option[BaseAlias], errorMessage: String, e: Exception): FormattedOutput = {
+        FormattedOutput(results,
+            """{
+            "error": """" + errorMessage + """",
+            "message": """ + e.toString + """,
+            "query" : """ + results.map(qo => qo.queryInput).mkString("\n") + """,
+            "data" : """ + results.map(qo => qo.queryResults).mkString("\n")  + """,
+            "sqlAlias": """ + sqlAlias.toString + """
+            }
+            """,
+            StatusCodes.InternalServerError
+        )
+    }
+
     def ErrorDefault(qol: Seq[QueryOutput]): FormattedOutput = {
         FormattedOutput(qol, """{
                 "error": "Bad Request",
@@ -41,37 +55,47 @@ object FormatManager {
         )
     }
 
+    def fromResultsDelete(results: Seq[QueryOutput], f: (Seq[QueryOutput], Option[Seq[String]], Option[BaseAlias]) => String, columns: Option[Seq[String]], sqlAlias: Option[BaseAlias]): FormattedOutput = {
+        try {
+            val (status, code, severity, msg) =
+                if ({ 
+                    results.flatMap(_.queryResults).flatMap { row =>
+                        row.result.get("num_affected_rows").flatMap(_.toIntOption)
+                    }.sum > 0 
+                })
+                    (StatusCodes.OK, "informational", "information", "Resource deleted")
+                else
+                    (StatusCodes.NotFound, "not-found", "error", "Resource not found")
+
+            val outcome = ujson.write(
+                Obj(
+                    "resourceType" -> "OperationOutcome",
+                    "issue" -> ujson.Arr(
+                        Obj(
+                            "severity" -> severity,
+                            "code" -> code,
+                            "diagnostics" -> msg
+                        )
+                    )
+                )
+            )
+            FormattedOutput(results, outcome, status)
+        } catch {
+            case e: Exception => formatException(results, sqlAlias, "Unable to properly format delete results", e)
+        }
+    }
+
     def fromResultsNDJson(results: Seq[QueryOutput], f: (Seq[QueryOutput], Option[Seq[String]], Option[BaseAlias]) => String, columns: Option[Seq[String]], sqlAlias: Option[BaseAlias]): FormattedOutput = {
         try { FormattedOutput(results, f(results, columns,sqlAlias)) }
         catch {
-            case e: Exception => FormattedOutput(results, 
-                """{
-                "error": "Unable to properly format results from query",
-                "message": """ + e.toString + """,
-                "query" : """ + results.map(qo => qo.queryInput).mkString("\n") + """,
-                "data" : """ + results.map(qo => qo.queryResults).mkString("\n")  + """,
-                "sqlAlias": """ + sqlAlias.toString + """
-                }
-                """,
-                StatusCodes.InternalServerError
-            )
+            case e: Exception => formatException(results, sqlAlias, "Unable to properly format results from query", e)
         }   
     }
     
     def fromResultsBundle(results: Seq[QueryOutput], f: (Seq[QueryOutput], Option[Seq[String]], String, Option[BaseAlias]) => String, columns: Option[Seq[String]], transactionType: String = "searchset", sqlAlias: Option[BaseAlias]): FormattedOutput = {
         try { FormattedOutput(results, f(results, columns, transactionType, sqlAlias)) }
         catch {
-            case e: Exception => FormattedOutput(results, 
-                """{
-                "error": "Unable to properly format results from query",
-                "message": """ + e.toString + """,
-                "query" : """ + results.map(qo => qo.queryInput).mkString("\n") + """,
-                "data" : """ + results.map(qo => qo.queryResults).mkString("\n")  + """,
-                "sqlAlias": """ + sqlAlias.toString + """
-                }
-                """,
-                StatusCodes.InternalServerError
-            )
+            case e: Exception => formatException(results, sqlAlias, "Unable to properly format results from query", e)
         }   
     }
 
