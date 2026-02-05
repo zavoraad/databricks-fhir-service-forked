@@ -1,4 +1,4 @@
-package com.databricks.industry.solutions.fhirapi
+package com.databricks.industry.solutions.fhirapi.logging
 
 import com.databricks.zerobus._
 import java.util.concurrent.CompletableFuture

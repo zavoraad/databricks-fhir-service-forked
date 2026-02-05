@@ -81,6 +81,13 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 }
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
+Compile / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
+
+// Ensure compiled classes are included in the package
+Compile / packageBin / packageOptions += Package.ManifestAttributes(
+  "Main-Class" -> "com.databricks.industry.solutions.fhirapi.FhirService"
+)
+
 assembly / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
 assembly / assemblyMergeStrategy := {
     case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
@@ -110,4 +117,6 @@ Docker / packageName := "databricks-fhir-api"
 dockerBaseImage := "eclipse-temurin:17-jre" 
 Docker / dockerExposedPorts := Seq(9000) //expose port 9000 in the docker image
 Docker / version := git.gitHeadCommit.value.get
+Docker / dockerBuildOptions := Seq("--no-cache")
 addCommandAlias("testDocker", ";docker:publishLocal; testOnly *DockerIntegrationTest")
+dockerUpdateLatest := true

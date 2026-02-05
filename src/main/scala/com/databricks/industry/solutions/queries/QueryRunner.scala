@@ -20,6 +20,19 @@ class QueryRunner(val ds: DataStore, val queryRetries: Int = 1) {
       queryInput.query,
       if (queryInput.fullUrl.nonEmpty) queryInput.fullUrl else queryInput.url.toString) // Capture the full URL string
   }
+
+  // For DELETE, INSERT, UPDATE statements
+  def runUpdate(queryInput: QueryInput): QueryOutput = {
+    val queryStartTime = DateTime.now
+    val (results, error) = ds.executeUpdate(queryInput.query, queryRetries, ds.getConnection)
+    val wrappedResults = results.map(QueryResultRow(_))
+    QueryOutput(wrappedResults, 
+      System.currentTimeMillis() - queryStartTime.getMillis, 
+      queryStartTime, 
+      error, 
+      queryInput.query,
+      if (queryInput.fullUrl.nonEmpty) queryInput.fullUrl else queryInput.url.toString)
+  }
 }
 
 case class QueryInput(query: String, url: Uri = Uri(""), fullUrl: String = "")

@@ -29,6 +29,7 @@ import akka.http.scaladsl.model.StatusCode
 import com.google.protobuf.Message
 import com.databricks.industry.solutions.fhirapi.queries._
 import com.databricks.industry.solutions.fhirapi.datastore.{PoolDataStore, Auth, TokenAuth, ServicePrincipalAuth}
+import com.databricks.industry.solutions.fhirapi.logging.{ZeroBusApiAppender, ZeroBusClient}
 
 
 
@@ -66,7 +67,7 @@ trait FhirService {
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat(
-        path("debug" / "test") {
+        path("debug" / "testers") {
           get {
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
           }
@@ -105,15 +106,26 @@ trait FhirService {
             },
             pathPrefix(Segment) { typeSeg =>
               concat(
-                pathPrefix(Segment) { idSeg => 
-                  get {  //read https://build.fhir.org/http.html#read
-                   extractUri { uri =>
-                     onSuccess(service.read(typeSeg, idSeg)(uri)) { result =>
-                     logger.info(result.asJson.noSpaces)
-                     complete(result.statusCd, result.data)
-                     }
+                path(Segment) { idSeg =>
+                  concat(
+                    get {  //read https://build.fhir.org/http.html#read
+                      extractUri { uri =>
+                        onSuccess(service.read(typeSeg, idSeg)(uri)) { result =>
+                          logger.info(result.asJson.noSpaces)
+                          complete(result.statusCd, result.data)
+                        }
+                      }
+                    },
+                    delete { //delete https://build.fhir.org/http.html#delete
+                      // Hard delete example: remove by resource id
+                      extractUri { uri => 
+                        onSuccess(service.delete(typeSeg, idSeg)(uri)) { result =>
+                          logger.info(result.asJson.noSpaces)
+                          complete(result.statusCd, result.data)
+                        }
+                      }
                     }
-                  }
+                  )
                 },
                  //create https://build.fhir.org/http.html#create
                 post {
