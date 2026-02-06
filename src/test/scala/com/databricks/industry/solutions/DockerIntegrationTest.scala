@@ -5,9 +5,19 @@ import org.scalatest.BeforeAndAfterAll
 import org.testcontainers.containers.wait.strategy.Wait
 import sttp.client3._
 import com.databricks.industry.solutions.fhirapi.datastore.PoolDataStore
+import ch.qos.logback.classic.{Level, LoggerContext}
+import org.slf4j.LoggerFactory
 
 class DockerIntegrationTest extends BaseTest with ForAllTestContainer with BeforeAndAfterAll {
 
+  // Configure logging before anything else
+  private val loggerContext = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+  
+  // Silence all testcontainers logging
+  loggerContext.getLogger("org.testcontainers").setLevel(Level.OFF)
+  loggerContext.getLogger("com.github.dockerjava").setLevel(Level.OFF)
+  loggerContext.getLogger("tc").setLevel(Level.OFF)
+  
   // Must be set before Testcontainers initializes Docker client
   System.setProperty("api.version", "1.44")
 
@@ -19,6 +29,17 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
   override val container: GenericContainer = GenericContainer(
     dockerImage = "databricks-fhir-api:latest",
     exposedPorts = Seq(9000),
+    env = Map(
+      "jdbc" -> config.getString("databricks.warehouse.usertoken.auth.jdbc"),
+      "token" -> config.getString("databricks.warehouse.usertoken.auth.token"),
+      "catalog" -> config.getString("databricks.data.catalog"),
+      "schema" -> config.getString("databricks.data.schema"),
+      "serverEndpoint" -> config.getString("logging.zerobus.serverEndpoint"),
+      "workspaceUrl" -> config.getString("logging.zerobus.workspaceUrl"),
+      "clientId" -> config.getString("logging.zerobus.clientId"),
+      "clientSecret" -> config.getString("logging.zerobus.clientSecret"),
+      "serviceprincipal_url" -> "http://dummy.url"  // Required but not used in this test
+    ),
     waitStrategy = Wait.forHttp("/debug/test").forStatusCode(200)
   )
 

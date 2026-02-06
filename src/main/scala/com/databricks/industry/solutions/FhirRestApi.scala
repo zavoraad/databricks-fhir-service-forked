@@ -67,6 +67,11 @@ trait FhirService {
   val routes: Route = {
     logRequestResult("akka-http-microservice") {
       concat(
+        path("debug" / "test") {
+          get {
+            complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
+          }
+        },
         path("debug" / "testers") {
           get {
             complete(HttpEntity(ContentTypes.`application/json`, """{"status": "FHIR API is running!"}"""))
@@ -153,6 +158,7 @@ trait FhirService {
 
 
 object FhirService extends App with FhirService {
+  // FHIR REST API Service Entry Point
   override implicit val system: ActorSystem = ActorSystem()
   override implicit val executor: ExecutionContext = system.dispatcher
   override val logger = Logging(system, "AkkaFhirService")
