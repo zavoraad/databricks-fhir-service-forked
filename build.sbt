@@ -1,8 +1,9 @@
 import sbt.librarymanagement.ConflictWarning
 import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
+import com.typesafe.sbt.packager.docker._
 
 
-enablePlugins(JavaAppPackaging, DockerPlugin, GitVersioning)
+enablePlugins(DockerPlugin, GitVersioning)
 conflictWarning := ConflictWarning.disable
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -81,14 +82,8 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 }
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
-Compile / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
-
-// Ensure compiled classes are included in the package
-Compile / packageBin / packageOptions += Package.ManifestAttributes(
-  "Main-Class" -> "com.databricks.industry.solutions.fhirapi.FhirService"
-)
-
 assembly / mainClass := Some("com.databricks.industry.solutions.fhirapi.FhirService")
+assembly / assemblyJarName := "databricks-fhir-service.jar"
 assembly / assemblyMergeStrategy := {
     case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
     case PathList("META-INF", xs @ _*) =>
@@ -111,12 +106,26 @@ assembly / assemblyMergeStrategy := {
 }
 
 
-import sbt.Package.ManifestAttributes
-
+// Docker configuration using assembly fat JAR
 Docker / packageName := "databricks-fhir-api"
-dockerBaseImage := "eclipse-temurin:17-jre" 
-Docker / dockerExposedPorts := Seq(9000) //expose port 9000 in the docker image
-Docker / version := git.gitHeadCommit.value.get
-Docker / dockerBuildOptions := Seq("--no-cache")
-addCommandAlias("testDocker", ";docker:publishLocal; testOnly *DockerIntegrationTest")
-dockerUpdateLatest := true
+Docker / version := "latest"
+Docker / dockerAliases := {
+  val gitHash = git.gitHeadCommit.value.getOrElse("unknown")
+  val registry = dockerRepository.value
+  val name = (Docker / packageName).value
+  Seq(
+    dockerAlias.value.withTag(Some("latest")),
+    dockerAlias.value.withTag(Some(gitHash))
+  )
+}
+
+// Map the assembly JAR into the Docker build context
+Docker / mappings := {
+  val jar = assembly.value
+  Seq(jar -> s"target/scala-3.4.2/${jar.getName}")
+}
+
+// Configure exposed ports
+dockerExposedPorts := Seq(9000)
+
+addCommandAlias("testDocker", ";assembly; docker:publishLocal; testOnly *DockerIntegrationTest")
