@@ -82,12 +82,19 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
     val request = basicRequest.delete(uri"$baseUrl/fhir/Claim/test-route-check")
     val response = request.send(backend)
 
-    // We don't care if it's 200, 404, or 500 - just that it's NOT 405 (Method Not Allowed)
-    assert(response.code.code != 405, s"DELETE returned 405 Method Not Allowed - route is not properly configured")
-    // If the route is properly set up, we should get either 200 (if it exists) or 404 (if not found)
+    val responseBody = response.body match {
+      case Right(body) => body
+      case Left(error) => error
+    }
+
+    // We don't care if it's 200, 204, or 500 - just that it's NOT 405 (Method Not Allowed)
+    assert(response.code.code != 405, 
+      s"DELETE returned 405 Method Not Allowed - route is not properly configured. Response: $responseBody")
+    
+    // If the route is properly set up, we should get either 200 (if it exists and deleted), 204 (if not found), or 500 (if error)
     assert(
-      response.code.code == 200 || response.code.code == 404 || response.code.code == 500,
-      s"Expected 200, 404, or 500 but got ${response.code.code}"
+      response.code.code == 200 || response.code.code == 204 || response.code.code == 500,
+      s"Expected 200, 204, or 500 but got ${response.code.code}. Response body: $responseBody"
     )
   }
 
@@ -97,21 +104,36 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
     val request = basicRequest.delete(uri"$baseUrl/fhir/Claim/-1")
     val response = request.send(backend)
 
-    assert(response.code.code == 200)
+    val responseBody = response.body match {
+      case Right(body) => body
+      case Left(error) => error
+    }
+
+    assert(response.code.code == 200, 
+      s"Expected 200 OK but got ${response.code.code}. Response body: $responseBody")
     response.body match {
-      case Right(body) => assert(body.contains("Resource deleted"))
+      case Right(body) => assert(body.contains("Resource deleted"), 
+        s"Response body doesn't contain 'Resource deleted': $body")
       case Left(error) => fail(s"Unexpected error response: $error")
     }
   }
 
-  test("FHIR delete of missing Claim returns not found") {
+  test("FHIR delete of missing Claim returns 204 No Content") {
     val backend = HttpClientSyncBackend()
     val request = basicRequest.delete(uri"$baseUrl/fhir/Claim/-2")
     val response = request.send(backend)
 
-    assert(response.code.code == 404)
+    val responseBody = response.body match {
+      case Right(body) => body
+      case Left(error) => error
+    }
+
+    // Per FHIR spec: DELETE on a non-existent resource returns 204 No Content
+    assert(response.code.code == 204, 
+      s"Expected 204 No Content but got ${response.code.code}. Response body: $responseBody")
     response.body match {
-      case Right(body) => assert(body.contains("Resource not found"))
+      case Right(body) => assert(body.isEmpty, 
+        s"Expected empty body for 204 No Content but got: $body")
       case Left(error) => fail(s"Unexpected error response: $error")
     }
   }

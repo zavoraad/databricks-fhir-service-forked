@@ -57,29 +57,30 @@ object FormatManager {
 
     def fromResultsDelete(results: Seq[QueryOutput], f: (Seq[QueryOutput], Option[Seq[String]], Option[BaseAlias]) => String, columns: Option[Seq[String]], sqlAlias: Option[BaseAlias]): FormattedOutput = {
         try {
-            val (status, code, severity, msg) =
-                if ({ 
-                    results.flatMap(_.queryResults).flatMap { row =>
-                        row.result.get("num_affected_rows").flatMap(_.toIntOption)
-                    }.sum > 0 
-                })
-                    (StatusCodes.OK, "informational", "information", "Resource deleted")
-                else
-                    (StatusCodes.NotFound, "not-found", "error", "Resource not found")
-
-            val outcome = ujson.write(
-                Obj(
-                    "resourceType" -> "OperationOutcome",
-                    "issue" -> ujson.Arr(
+            {results.flatMap(_.queryResults).flatMap { row =>
+                row.result.get("num_affected_rows").flatMap(_.toIntOption)
+            }.sum} match {
+                case n if n > 0 =>
+                    // Resource was found and deleted - return 200 OK with OperationOutcome
+                    FormattedOutput(results, ujson.write(
                         Obj(
-                            "severity" -> severity,
-                            "code" -> code,
-                            "diagnostics" -> msg
+                            "resourceType" -> "OperationOutcome",
+                            "issue" -> ujson.Arr(
+                                Obj(
+                                    "severity" -> "information",
+                                    "code" -> "informational",
+                                    "diagnostics" -> "Resource deleted"
+                                )
+                            )
                         )
                     )
-                )
-            )
-            FormattedOutput(results, outcome, status)
+                    , StatusCodes.OK)
+                
+                case _ =>
+                    // Resource not found - return 204 No Content with empty body
+                    // Per FHIR spec: DELETE on a non-existent resource returns 204 No Content
+                    FormattedOutput(results, "", StatusCodes.NoContent)
+            }
         } catch {
             case e: Exception => formatException(results, sqlAlias, "Unable to properly format delete results", e)
         }
