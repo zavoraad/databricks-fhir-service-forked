@@ -165,3 +165,28 @@ class ServiceManager(val qi: QueryInterpreter, val qr: QueryRunner, sqlAlias: Op
   }
 }
 
+/* 
+  Server side responsible fields in the FHIR API spec
+ */
+
+object ServiceManager{
+  /**
+   * Generates a new UUID string for resource IDs.
+   * Uses Java's UUID.randomUUID() which generates a version 4 (random) UUID.
+   * 
+   * @return A string representation of a UUID (e.g., "550e8400-e29b-41d4-a716-446655440000")
+   */
+  def generateUUID: String = {
+    java.util.UUID.randomUUID().toString
+  }
+
+  /**
+   * Generates metadata for a FHIR resource.
+   * This will include versionId, lastUpdated, etc.
+   * 
+   * @return Metadata as a string (to be implemented)
+   */
+  def generateMeta: String = {
+    ???
+  }
+}
