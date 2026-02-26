@@ -5,9 +5,10 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase
 import java.net.URI
 import java.time.Duration
 import io.circe.syntax._
-import io.circe.generic.auto._ 
+import io.circe.generic.auto._
 
-class ZeroBusApiAppender (val client: ZeroBusClient) extends UnsynchronizedAppenderBase[ILoggingEvent] {
+class ZeroBusApiAppender(val client: ZeroBusClient)
+    extends UnsynchronizedAppenderBase[ILoggingEvent] {
 
   override def append(event: ILoggingEvent): Unit = {
 
@@ -15,7 +16,7 @@ class ZeroBusApiAppender (val client: ZeroBusClient) extends UnsynchronizedAppen
     try {
       client.ingest(event.getFormattedMessage)
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         // CAUTION: Do not log here using the same logger, or you'll create an infinite loop!
         System.err.println(s"Failed to send log to API: ${e.getMessage}")
     }
