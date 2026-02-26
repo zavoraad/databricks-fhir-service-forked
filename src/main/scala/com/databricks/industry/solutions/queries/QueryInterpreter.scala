@@ -78,15 +78,72 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
         search(table, Map(column -> {dollarEverything.translate("prefix") + patientId})))
   }
 
+  /**
+   * Recursively converts a ujson.Value to a Databricks SQL expression.
+   * 
+   * - Objects become named_struct(...)
+   * - Arrays become array(...)
+   * - Primitives are converted to their SQL representation
+   * 
+   * This preserves the nested structure of FHIR resources for proper querying.
+   */
+  private def jsonToSqlExpression(value: ujson.Value): String = {
+    value match {
+      case str: ujson.Str => 
+        // Escape single quotes in strings
+        s"'${str.str.replace("'", "''")}'"
+      
+      case num: ujson.Num => 
+        num.value.toString
+      
+      case bool: ujson.Bool => 
+        bool.value.toString
+      
+      case arr: ujson.Arr =>
+        if (arr.arr.isEmpty) {
+          // Empty array
+          "array()"
+        } else {
+          // Recursively process each element
+          val elements = arr.arr.map(jsonToSqlExpression).mkString(", ")
+          s"array($elements)"
+        }
+      
+      case obj: ujson.Obj =>
+        if (obj.obj.isEmpty) {
+          // Empty object
+          "named_struct()"
+        } else {
+          // Recursively build named_struct for nested object
+          val structArgs = obj.obj.flatMap { case (key, nestedValue) =>
+            Seq(s"'$key'", jsonToSqlExpression(nestedValue))
+          }.mkString(", ")
+          s"named_struct($structArgs)"
+        }
+      
+      case ujson.Null => 
+        "NULL"
+    }
+  }
+
   def insert(resource: String, payload: String): String = {
-    // Generate an INSERT statement that parses the JSON payload into the table structure
-    // Using from_json with schema_of_json to dynamically map JSON to table schema
-    s"INSERT INTO $catalog.$schema.$resource SELECT * FROM (SELECT from_json('$payload', schema_of_json('$payload')))"
-    /* 
-    INSERT INTO RESOURCE
-      k,v
-      named_struct (k) -> (v)
-     */
+    // Parse the JSON payload to extract field names and values
+    // Using named_struct recursively to preserve nested FHIR resource structure
+    // Reference: https://docs.databricks.com/aws/en/sql/language-manual/functions/named_struct
+    
+    val jsonParsed = ujson.read(payload)
+    
+    // Build named_struct arguments recursively for the entire resource
+    val namedStructArgs = jsonParsed.obj.flatMap { case (key, value) =>
+      Seq(
+        s"'$key'",
+        jsonToSqlExpression(value)
+      )
+    }.mkString(", ")
+    
+    // Generate INSERT statement using recursive named_struct
+    s"""INSERT INTO $catalog.$schema.$resource 
+       |SELECT named_struct($namedStructArgs) as resource""".stripMargin
   }
 
   /* 

@@ -8,16 +8,20 @@ import com.databricks.industry.solutions.fhirapi.datastore.PoolDataStore
 import ch.qos.logback.classic.{Level, LoggerContext}
 import org.slf4j.LoggerFactory
 
-class DockerIntegrationTest extends BaseTest with ForAllTestContainer with BeforeAndAfterAll {
+class DockerIntegrationTest
+    extends BaseTest
+    with ForAllTestContainer
+    with BeforeAndAfterAll {
 
   // Configure logging before anything else
-  private val loggerContext = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-  
+  private val loggerContext =
+    LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+
   // Silence all testcontainers logging
   loggerContext.getLogger("org.testcontainers").setLevel(Level.OFF)
   loggerContext.getLogger("com.github.dockerjava").setLevel(Level.OFF)
   loggerContext.getLogger("tc").setLevel(Level.OFF)
-  
+
   // Must be set before Testcontainers initializes Docker client
   System.setProperty("api.version", "1.44")
 
@@ -38,12 +42,13 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
       "workspaceUrl" -> config.getString("logging.zerobus.workspaceUrl"),
       "clientId" -> config.getString("logging.zerobus.clientId"),
       "clientSecret" -> config.getString("logging.zerobus.clientSecret"),
-      "serviceprincipal_url" -> "http://dummy.url"  // Required but not used in this test
+      "serviceprincipal_url" -> "http://dummy.url" // Required but not used in this test
     ),
     waitStrategy = Wait.forHttp("/debug/test").forStatusCode(200)
   )
 
-  private def baseUrl: String = s"http://${container.host}:${container.mappedPort(9000)}"
+  private def baseUrl: String =
+    s"http://${container.host}:${container.mappedPort(9000)}"
 
   private def insertClaim(id: String): Unit = {
     val pool = new PoolDataStore(ta)
@@ -88,9 +93,11 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
     }
 
     // We don't care if it's 200, 204, or 500 - just that it's NOT 405 (Method Not Allowed)
-    assert(response.code.code != 405, 
-      s"DELETE returned 405 Method Not Allowed - route is not properly configured. Response: $responseBody")
-    
+    assert(
+      response.code.code != 405,
+      s"DELETE returned 405 Method Not Allowed - route is not properly configured. Response: $responseBody"
+    )
+
     // If the route is properly set up, we should get either 200 (if it exists and deleted), 204 (if not found), or 500 (if error)
     assert(
       response.code.code == 200 || response.code.code == 204 || response.code.code == 500,
@@ -109,11 +116,16 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
       case Left(error) => error
     }
 
-    assert(response.code.code == 200, 
-      s"Expected 200 OK but got ${response.code.code}. Response body: $responseBody")
+    assert(
+      response.code.code == 200,
+      s"Expected 200 OK but got ${response.code.code}. Response body: $responseBody"
+    )
     response.body match {
-      case Right(body) => assert(body.contains("Resource deleted"), 
-        s"Response body doesn't contain 'Resource deleted': $body")
+      case Right(body) =>
+        assert(
+          body.contains("Resource deleted"),
+          s"Response body doesn't contain 'Resource deleted': $body"
+        )
       case Left(error) => fail(s"Unexpected error response: $error")
     }
   }
@@ -129,12 +141,129 @@ class DockerIntegrationTest extends BaseTest with ForAllTestContainer with Befor
     }
 
     // Per FHIR spec: DELETE on a non-existent resource returns 204 No Content
-    assert(response.code.code == 204, 
-      s"Expected 204 No Content but got ${response.code.code}. Response body: $responseBody")
+    assert(
+      response.code.code == 204,
+      s"Expected 204 No Content but got ${response.code.code}. Response body: $responseBody"
+    )
     response.body match {
-      case Right(body) => assert(body.isEmpty, 
-        s"Expected empty body for 204 No Content but got: $body")
+      case Right(body) =>
+        assert(
+          body.isEmpty,
+          s"Expected empty body for 204 No Content but got: $body"
+        )
       case Left(error) => fail(s"Unexpected error response: $error")
     }
+  }
+
+  test("GET /fhir/metadata returns 200 and CapabilityStatement") {
+    val backend = HttpClientSyncBackend()
+    val response = basicRequest.get(uri"$baseUrl/fhir/metadata").send(backend)
+    assert(
+      response.code.code == 200,
+      s"Expected 200 OK but got ${response.code.code}"
+    )
+    response.body match {
+      case Right(body) =>
+        assert(
+          body.contains("CapabilityStatement"),
+          s"Expected CapabilityStatement in body: $body"
+        )
+        assert(
+          body.contains("\"resourceType\""),
+          s"Expected resourceType in body: $body"
+        )
+        assert(
+          body.contains("\"status\"") && body.contains("active"),
+          s"Expected status active: $body"
+        )
+        assert(body.contains("\"rest\""), s"Expected rest in body: $body")
+      case Left(error) => fail(s"Unexpected error response: $error")
+    }
+  }
+
+  // ----- Required FHIR API endpoints not yet implemented (pending until implemented) -----
+
+  test("GET /fhir/_history (history system) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("GET /fhir/_search (search system) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("POST /fhir/_search (search system) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("POST /fhir (batch/transaction) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("GET /fhir/Patient (search type) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("PUT /fhir/Patient (conditional update) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("PATCH /fhir/Patient (conditional patch) returns 501 - Required TODO") {
+    pending
+  }
+
+  test(
+    "DELETE /fhir/Patient (conditional delete) returns 501 - Required TODO"
+  ) {
+    pending
+  }
+
+  test("POST /fhir/Patient (create) returns 501 - Required TODO") {
+    pending
+  }
+
+  test(
+    "GET /fhir/Patient/_history (history type) returns 501 - Required TODO"
+  ) {
+    pending
+  }
+
+  test("GET /fhir/Patient/_search (search type) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("POST /fhir/Patient/_search (search type) returns 501 - Required TODO") {
+    pending
+  }
+
+  test(
+    "GET /fhir/Patient/test-id/_history (history instance) returns 501 - Required TODO"
+  ) {
+    pending
+  }
+
+  test(
+    "DELETE /fhir/Patient/test-id/_history (delete-history) returns 501 - Required TODO"
+  ) {
+    pending
+  }
+
+  test(
+    "GET /fhir/Patient/test-id/_history/v1 (vread) returns 501 - Required TODO"
+  ) {
+    pending
+  }
+
+  test(
+    "DELETE /fhir/Patient/test-id/_history/v1 (delete-history-version) returns 501 - Required TODO"
+  ) {
+    pending
+  }
+
+  test("PUT /fhir/Patient/test-id (update) returns 501 - Required TODO") {
+    pending
+  }
+
+  test("PATCH /fhir/Patient/test-id (patch) returns 501 - Required TODO") {
+    pending
   }
 }
