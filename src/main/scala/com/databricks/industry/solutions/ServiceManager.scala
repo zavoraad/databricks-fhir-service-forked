@@ -225,6 +225,22 @@ class ServiceManager(
       )
       .filter({ case (t, _) => t != "" })
   }
+
+  def search(typeSeg: String)(implicit url: Uri): Future[FormattedOutput] =
+    Future {
+      val sql = qi.search(typeSeg, url.query().toMap)
+      val result = qr.runQuery(QueryInput(sql, url, url.toString()))
+      result.error match {
+        case Some(x) => FormatManager.ErrorDefault(Seq(result))
+        case None    =>
+          FormatManager.fromResultsNDJson(
+            Seq(result),
+            FormatManager.resourcesAsNDJSON,
+            None,
+            sqlAlias
+          )
+      }
+    }
 }
 
 /*
