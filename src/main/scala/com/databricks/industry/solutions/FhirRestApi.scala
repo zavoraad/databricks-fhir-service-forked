@@ -318,9 +318,13 @@ trait FhirService {
                 pathEnd {
                   concat(
                     get {
-                      notImplementedResponse(
-                        "search (type) - GET [base]/[type]?params"
-                      )
+                      // "search (type) - GET [base]/[type]?params"
+                      extractUri { uri =>
+                        onSuccess(service.search(typeSeg)(uri)) { result =>
+                          logger.info(result.asJson.noSpaces)
+                          complete(result.statusCd, result.data)
+                        }
+                      }
                     },
                     put {
                       notImplementedResponse(
