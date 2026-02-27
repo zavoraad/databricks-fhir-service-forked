@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.config.{Config, ConfigFactory}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import io.circe.syntax._
@@ -38,6 +39,7 @@ import com.databricks.industry.solutions.fhirapi.logging.{
   ZeroBusApiAppender,
   ZeroBusClient
 }
+import akka.pattern.after
 import ujson._
 
 trait FhirService {
@@ -186,7 +188,18 @@ trait FhirService {
                 ),
                 statusCd = StatusCodes.OK
               )
-              onComplete(client.ingest(dummyRecord.asJson.noSpaces)) {
+              val ingestFuture = client.ingest(dummyRecord.data)
+              val timeoutFuture = after(15.seconds, system.scheduler)(
+                Future.failed(
+                  new RuntimeException(
+                    "ZeroBus ingest timed out after 15 seconds"
+                  )
+                )
+              )(executor)
+              val resultWithTimeout = Future.firstCompletedOf(
+                Seq(ingestFuture, timeoutFuture)
+              )(executor)
+              onComplete(resultWithTimeout) {
                 case Success(_) =>
                   complete(
                     StatusCodes.OK,
@@ -196,6 +209,9 @@ trait FhirService {
                     )
                   )
                 case Failure(ex) =>
+                  val causeMsg = Option(ex.getCause)
+                    .map(c => c.getMessage)
+                    .getOrElse(ex.getMessage)
                   complete(
                     StatusCodes.InternalServerError,
                     HttpEntity(
@@ -203,9 +219,11 @@ trait FhirService {
                       ujson.write(
                         Obj(
                           "status" -> "error",
-                          "message" -> Option(ex.getMessage).getOrElse(
-                            ex.toString
-                          )
+                          "message" -> Option(ex.getMessage)
+                            .getOrElse(ex.toString),
+                          "exceptionType" -> ex.getClass.getSimpleName,
+                          "cause" -> (if (ex.getCause != null) causeMsg
+                                      else ujson.Null)
                         )
                       )
                     )
@@ -220,9 +238,9 @@ trait FhirService {
                     ujson.write(
                       Obj(
                         "status" -> "error",
-                        "message" -> Option(ex.getMessage).getOrElse(
-                          ex.toString
-                        )
+                        "message" -> Option(ex.getMessage)
+                          .getOrElse(ex.toString),
+                        "exceptionType" -> ex.getClass.getSimpleName
                       )
                     )
                   )
