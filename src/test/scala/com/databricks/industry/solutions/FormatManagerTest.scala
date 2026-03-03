@@ -6,9 +6,13 @@ import com.databricks.industry.solutions.fhirapi.queries.QueryOutput
 class FormatManagerSuite extends BaseTest {
 
   test("Test resourceAsNDJSON") {
-    val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
+    val fhirResourceJson =
+      """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
     import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
-    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)), QueryResultRow(Map("Patient" -> fhirResourceJson)))
+    val queryResults = List(
+      QueryResultRow(Map("Patient" -> fhirResourceJson)),
+      QueryResultRow(Map("Patient" -> fhirResourceJson))
+    )
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
@@ -19,15 +23,19 @@ class FormatManagerSuite extends BaseTest {
     )
 
     val result = FormatManager.resourcesAsNDJSON(List(qo))
-    val expected = """{"resourceType":"Patient","id":"1","name":[{"family":"Test","given":["Patient"]}]}
+    val expected =
+      """{"resourceType":"Patient","id":"1","name":[{"family":"Test","given":["Patient"]}]}
 {"resourceType":"Patient","id":"1","name":[{"family":"Test","given":["Patient"]}]}"""
     assert(result == expected)
   }
 
   test("Test empty resourceAsNDJSON") {
-    val fhirResourceJson = "" 
+    val fhirResourceJson = ""
     import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
-    val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)), QueryResultRow(Map("Patient" -> fhirResourceJson)))
+    val queryResults = List(
+      QueryResultRow(Map("Patient" -> fhirResourceJson)),
+      QueryResultRow(Map("Patient" -> fhirResourceJson))
+    )
     val qo = QueryOutput(
       queryResults = queryResults,
       queryRuntime = 100,
@@ -43,7 +51,8 @@ class FormatManagerSuite extends BaseTest {
   }
 
   test("Test resourcesAsEntry") {
-    val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
+    val fhirResourceJson =
+      """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
     import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
     val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)))
     val qo = QueryOutput(
@@ -55,18 +64,21 @@ class FormatManagerSuite extends BaseTest {
       url = "http://localhost:9000/fhir/Patient/1"
     )
 
-    val result = FormatManager.resourcesAsEntry(qo)
+    val result = FormatManager.resourceAsEntry(qo)
     val expectedResource = ujson.read(fhirResourceJson)
-    val expected = Seq(ujson.Obj("resource" -> expectedResource, "fullUrl" -> "urn:uuid:1"))
+    val expected =
+      Seq(ujson.Obj("resource" -> expectedResource, "fullUrl" -> "urn:uuid:1"))
 
     assert(result.length == 1)
     assert(result == expected)
   }
 
   test("Test entryAsBundle") {
-    val fhirResourceJson = """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
+    val fhirResourceJson =
+      """{"resourceType": "Patient", "id": "1", "name": [{"family": "Test", "given": ["Patient"]}]}"""
     val resourceObj = ujson.read(fhirResourceJson)
-    val entry = Seq(ujson.Obj("resource" -> resourceObj, "fullUrl" -> "urn:uuid:1"))
+    val entry =
+      Seq(ujson.Obj("resource" -> resourceObj, "fullUrl" -> "urn:uuid:1"))
     import com.databricks.industry.solutions.fhirapi.queries.QueryResultRow
     val queryResults = List(QueryResultRow(Map("Patient" -> fhirResourceJson)))
 
@@ -79,7 +91,8 @@ class FormatManagerSuite extends BaseTest {
       url = "http://localhost:9000/fhir/Patient/1"
     )
 
-    val result = FormatManager.resourcesAsBundle(Seq(qo),transactionType="searchsets" )
+    val result =
+      FormatManager.resourcesAsBundle(Seq(qo), transactionType = "searchsets")
     val resultJson = ujson.read(result)
 
     assert(resultJson("resourceType").str == "Bundle")
@@ -88,4 +101,4 @@ class FormatManagerSuite extends BaseTest {
     assert(resultJson("entry")(0) == entry.head)
   }
 
-} 
+}

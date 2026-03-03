@@ -114,7 +114,8 @@ trait FhirService {
         config.getString("databricks.data.catalog"),
         config.getString("databricks.data.schema"),
         BaseAlias.fromConfig(config, "databricks.alias.sqlpredicate"),
-        BaseAlias.fromConfig(config, "databricks.alias.dollareverything")
+        BaseAlias.fromConfig(config, "databricks.alias.dollareverything"),
+        config.getInt("fhir.paging.defaultPagingSize")
       ),
       new QueryRunner(
         PoolDataStore(
