@@ -195,7 +195,7 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
           .map(p =>
             p(0) match {
               case "_page"   => null
-              case "last_id" => sqlAlias.translate("id") + " >= " + p(1)
+              case "last_id" => sqlAlias.translate("id") + " >= '" + p(1) + "'"
               case _         =>
                 sqlAlias.translate(p(0)) + filterPrefixToSQL(p(1)) + p(1) + "\""
             }
@@ -229,7 +229,9 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
   }
 
   def paramsToLimit(params: Map[String, String]): String = {
-    " ORDER BY " + sqlAlias.translate("id") + " LIMIT " + pageSize + 1
+    " ORDER BY " + sqlAlias.translate(
+      "id"
+    ) + " LIMIT " + pageSize + 1 // pull in the next record too but don't display it
   }
 
   /*

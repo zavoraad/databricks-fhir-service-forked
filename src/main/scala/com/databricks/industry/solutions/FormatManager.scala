@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter
 import scala.collection.immutable.List
 import ujson.Obj
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.Uri
 import com.databricks.industry.solutions.fhirapi.queries._
 
 /* Spark DDL of this case class
@@ -76,14 +77,121 @@ object FormatManager {
     )
   }
 
-  def fromResultsSearch(
+  def fromResultSearch(
       results: Seq[QueryOutput],
-      f: (Seq[QueryOutput], Option[Seq[String]], Option[BaseAlias]) => String,
       columns: Option[Seq[String]],
-      sqlAlias: Option[BaseAlias]
+      sqlAlias: Option[BaseAlias],
+      url: Uri,
+      pageSize: Int
   ): FormattedOutput = {
-    ???
+    try {
+      FormattedOutput(
+        results,
+        ujson.write(
+          Obj(
+            "resourceType" -> "Bundle",
+            "total" -> "none",
+            "type" -> "searchset",
+            "link" -> {
+              Seq(Obj("relation" -> "self", "url" -> url.toString)) ++
+                {
+                  // TODO find the right calculation
+                  results
+                    .map(qo => qo.queryResults.length)
+                    .sum > pageSize match {
+                    case true =>
+                      Seq(
+                        Obj(
+                          "relation" -> "next",
+                          "url" -> nextPagedUrl(url, results.last)
+                        )
+                      )
+                    case false => Seq.empty
+                  }
+                }
+            },
+            "entry" -> results
+              .take(pageSize)
+              .flatMap(qo => resourceAsEntry(qo, columns, sqlAlias))
+          )
+        )
+      )
+
+    } catch {
+      case e: Exception =>
+        formatException(
+          results,
+          sqlAlias,
+          "Unable to properly format results from query",
+          e
+        )
+    }
   }
+
+  def nextPagedUrl(url: Uri, qo: QueryOutput): String = {
+    val params = url.query().toMap
+    val updated = params - "_page" - "last_id" + ("_page" -> {
+      params
+        .getOrElse("_page", "1")
+        .toInt + 1
+    }.toString) + ("last_id" -> {
+      val j = ujson.read(
+        qo.queryResults.last.result
+          .get(resourceTypeFromFhirUrl(url))
+          .getOrElse(
+            throw new Exception(
+              "Unable to find an ID from a paged result for the next link"
+            )
+          )
+      )
+      j("id").str
+    })
+    url.withQuery(Uri.Query(updated.toSeq: _*)).toString
+  }
+
+  /** Extracts the base FHIR resource type from a FHIR URL path (e.g. Patient,
+    * Encounter, Claim). The URL is expected to follow the form
+    * [base]/fhir/[resourceType] or [base]/fhir/[resourceType]/...
+    *
+    * @param url
+    *   the request URI (e.g. from the link "url" in a Bundle, or nextPagedUrl)
+    * @return
+    *   the resource type segment after /fhir/
+    * @throws IllegalArgumentException
+    *   if the path does not match the expected /fhir/[resourceType] form
+    */
+  def resourceTypeFromFhirUrl(url: Uri): String = {
+    val segments = url.path.toString.split("/").filter(_.nonEmpty)
+    if (segments.length >= 2 && segments(0).equalsIgnoreCase("fhir"))
+      segments(1)
+    else
+      throw new IllegalArgumentException(
+        s"FHIR URL path does not contain a resource type: ${url.path}"
+      )
+  }
+
+  /** Extracts the base FHIR resource type from a FHIR URL string (e.g. a
+    * nextPagedUrl).
+    *
+    * @param urlString
+    *   the full URL string (e.g.
+    *   "http://localhost:9000/fhir/Patient?_page=2&last_id=xyz")
+    * @return
+    *   the resource type (e.g. "Patient")
+    * @throws IllegalArgumentException
+    *   if the URL cannot be parsed or does not match /fhir/[type]
+    */
+  def resourceTypeFromFhirUrl(urlString: String): String =
+    try {
+      resourceTypeFromFhirUrl(Uri(urlString))
+    } catch {
+      case e: IllegalArgumentException => throw e
+      case e: Exception                =>
+        throw new IllegalArgumentException(
+          s"Invalid FHIR URL or path does not contain a resource type: $urlString",
+          e
+        )
+    }
 
   def fromResultsDelete(
       results: Seq[QueryOutput],
@@ -225,7 +333,7 @@ object FormatManager {
       Obj(
         "resourceType" -> "Bundle",
         "type" -> transactionType,
-        "entry" -> qol.flatMap(qo => resourcesAsEntry(qo, columns, sqlAlias))
+        "entry" -> qol.flatMap(qo => resourceAsEntry(qo, columns, sqlAlias))
       )
     )
   }
@@ -234,8 +342,7 @@ object FormatManager {
         This method should only be called by this class as it does not
         construct the wrapped data needed for a bundle
    */
-
-  def resourcesAsEntry(
+  def resourceAsEntry(
       qo: QueryOutput,
       columns: Option[Seq[String]] = None,
       sqlAlias: Option[BaseAlias] = None

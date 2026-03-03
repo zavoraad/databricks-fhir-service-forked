@@ -7,6 +7,7 @@ import sttp.client3._
 import com.databricks.industry.solutions.fhirapi.datastore.PoolDataStore
 import ch.qos.logback.classic.{Level, LoggerContext}
 import org.slf4j.LoggerFactory
+import ujson._
 
 class DockerIntegrationTest
     extends BaseTest
@@ -181,6 +182,56 @@ class DockerIntegrationTest
     }
   }
 
+  test(
+    "GET /fhir/Patient search returns bundle and following next link yields ~1156 patients"
+  ) {
+    val backend = HttpClientSyncBackend()
+    var nextUrl: Option[String] = Some(s"$baseUrl/fhir/Patient")
+    var totalEntries = 0
+    var pageCount = 0
+    val maxPages = 20 // safety: ~100 per page => 20 pages for 2K
+
+    while (nextUrl.nonEmpty && pageCount < maxPages) {
+      pageCount += 1
+      val url = nextUrl.get
+      val request = basicRequest.get(uri"$url")
+      val response = request.send(backend)
+
+      assert(
+        response.code.code == 200,
+        s"Expected 200 OK on page $pageCount (url=$url) but got ${response.code.code}. ${response.body}"
+      )
+      val body = response.body match {
+        case Right(b) => b
+        case Left(e)  => fail(s"Request failed: $e")
+      }
+      val bundle = ujson.read(body).obj
+      assert(bundle("resourceType").str == "Bundle", s"Expected Bundle: $body")
+      assert(bundle("type").str == "searchset", s"Expected searchset: $body")
+
+      val entries = bundle.get("entry").fold(0)(_.arr.size)
+      totalEntries += entries
+
+      nextUrl = bundle
+        .get("link")
+        .flatMap { linkValue =>
+          linkValue.arr
+            .find { link =>
+              link.obj.get("relation").exists(_.str == "next")
+            }
+            .flatMap(_.obj.get("url").map(_.str))
+        }
+        .map { urlStr =>
+          if (urlStr.startsWith("http")) urlStr else s"$baseUrl$urlStr"
+        }
+    }
+
+    assert(
+      totalEntries >= 1100 && totalEntries <= 1200,
+      s"Expected approximately 1156 Patient resources (1100–1200) but got $totalEntries across $pageCount page(s)"
+    )
+  }
+
   // ----- Required FHIR API endpoints not yet implemented (pending until implemented) -----
 
   test("GET /fhir/_history (history system) returns 501 - Required TODO") {
@@ -199,8 +250,10 @@ class DockerIntegrationTest
     pending
   }
 
-  test("GET /fhir/Patient (search type) returns 501 - Required TODO") {
-    pending
+  test(
+    "GET /fhir/Patient (search type) - implemented; see test above for search + next link"
+  ) {
+    // Search and pagination covered by "GET /fhir/Patient search returns bundle and following next link yields ~1156 patients"
   }
 
   test("PUT /fhir/Patient (conditional update) returns 501 - Required TODO") {

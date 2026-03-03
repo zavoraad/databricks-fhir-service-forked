@@ -193,13 +193,6 @@ class ServiceManager(
     }
   }
 
-  def search(typeSeg: String, uri: Map[String, String]): FormattedOutput = { // TODO FormattedOutput with an iterator instead of a list
-    val sql = qi.search(typeSeg, uri) // Builds out the search query to run
-    // run query...
-    // return a paged result (cursor implementation)
-    ???
-  }
-
   def allTablesInSchema: Seq[String] = {
     qr.runQuery(QueryInput(qi.allTablesInSchema))
       .queryResults
@@ -233,11 +226,12 @@ class ServiceManager(
       result.error match {
         case Some(x) => FormatManager.ErrorDefault(Seq(result))
         case None    =>
-          FormatManager.fromResultsNDJson(
+          FormatManager.fromResultSearch(
             Seq(result),
-            FormatManager.resourcesAsNDJSON,
             None,
-            sqlAlias
+            sqlAlias,
+            url,
+            qi.pageSize
           )
       }
     }
