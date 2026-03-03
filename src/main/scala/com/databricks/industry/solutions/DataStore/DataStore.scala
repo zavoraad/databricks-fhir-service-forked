@@ -1,4 +1,4 @@
-package com.databricks.industry.solutions.fhirapi
+package com.databricks.industry.solutions.fhirapi.datastore
 
 import java.sql.Connection
 
@@ -27,6 +27,22 @@ trait DataStore{
         (Nil, Some(e.toString))
     } finally {
       if (resultSet != null) resultSet.close
+      if (statement != null) statement.close
+    }
+  }
+
+  // For DELETE, INSERT, UPDATE statements that return an update count instead of a ResultSet
+  def executeUpdate(query: String, retries: Int, con: Connection): (List[Map[String, String]], Option[String]) = {
+    val statement = con.createStatement
+    try {
+      val affectedRows = statement.executeUpdate(query)
+      // Return the affected rows count as a result map
+      (List(Map("num_affected_rows" -> affectedRows.toString)), None)
+    } catch {
+      case r if retries > 0 => executeUpdate(query, retries - 1, con)
+      case e: Exception =>
+        (Nil, Some(e.toString))
+    } finally {
       if (statement != null) statement.close
     }
   }
