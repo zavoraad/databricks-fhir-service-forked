@@ -1,4 +1,4 @@
-package com.databricks.industry.solutions.fhirapi
+package com.databricks.industry.solutions.fhirapi.datastore
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import java.sql.Connection

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package com.databricks.industry.solutions.fhirapi;
+
+/*
+
+TABLE SCHEMA:
+CREATE TABLE hls_healthcare.databricks_fhir_service_forked.log_data (
+  queryOutput ARRAY<STRUCT<
+    queryResults: ARRAY<STRUCT<result MAP<STRING, STRING>>>,
+    queryRuntime: BIGINT,
+    queryStartTime: STRING,
+    error: STRING,
+    queryInput: STRING,
+    url: STRING
+  >>,
+  data STRING,
+  statusCd STRING,
+  uuid_ingest_id STRING
+);
+
+Mapping:
+- ARRAY<STRUCT<result MAP<...>>> = repeated QueryResult
+- result MAP<STRING, STRING> = repeated KeyValuePair (protobuf representation)
+
+*/
+
+message LogData {
+  // Represents a single query result row (one map)
+  // Maps to: STRUCT<result MAP<STRING, STRING>>
+  message QueryResult {
+    // The "result" field as native proto3 map type
+    map<string, string> result = 1;
+}
+
+  // Nested message for query output
+message QueryOutputProto {
+    // queryResults: ARRAY<STRUCT<result MAP<STRING, STRING>>>
+    repeated QueryResult queryResults = 1;
+    int64 queryRuntime = 2;
+    string queryStartTime = 3;
+    string error = 4;
+    string queryInput = 5;
+    string url = 6;
+  }
+
+  repeated QueryOutputProto queryOutput = 1;
+  string data = 2;
+  string statusCd = 3;
+  string uuid_ingest_id = 4; // Unique ID for deduplication
+}
