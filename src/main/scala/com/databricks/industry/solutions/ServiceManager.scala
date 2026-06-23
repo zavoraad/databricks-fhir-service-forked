@@ -19,8 +19,8 @@ class ServiceManager(
   def read(typeSeg: String, idSeg: String)(implicit
       url: Uri
   ): Future[FormattedOutput] = Future {
-    val sql = qi.read(typeSeg, idSeg, url.query().toMap)
-    val result = qr.runQuery(QueryInput(sql, url, url.toString()))
+    val pq = qi.read(typeSeg, idSeg, url.query().toMap)
+    val result = qr.runQuery(QueryInput(pq, url, url.toString()))
     result.error match {
       case Some(x) => FormatManager.ErrorDefault(Seq(result))
       case None    =>
@@ -36,8 +36,8 @@ class ServiceManager(
   def delete(typeSeg: String, idSeg: String)(implicit
       url: Uri
   ): Future[FormattedOutput] = Future {
-    val sql = qi.delete(typeSeg, idSeg, url.query().toMap)
-    val result = qr.runUpdate(QueryInput(sql, url, url.toString()))
+    val pq = qi.delete(typeSeg, idSeg, url.query().toMap)
+    val result = qr.runUpdate(QueryInput(pq, url, url.toString()))
     result.error match {
       case Some(_) => FormatManager.ErrorDefault(Seq(result))
       case None    =>
@@ -56,7 +56,7 @@ class ServiceManager(
         val json = ujson.read(payload)
         val resourceType = json("resourceType").str
         val sql = qi.insert(resourceType, payload)
-        val result = qr.runUpdate(QueryInput(sql, url, url.toString()))
+        val result = qr.runUpdate(QueryInput(ParameterizedQuery(sql, None), url, url.toString()))
         result.error match {
           case Some(_) => FormatManager.ErrorDefault(Seq(result))
           case None    =>
@@ -89,7 +89,7 @@ class ServiceManager(
     )
 
     Future {
-      qr.runQuery(QueryInput(metadataQuery, url, url.toString()))
+      qr.runQuery(QueryInput(ParameterizedQuery(metadataQuery, None), url, url.toString()))
     }.flatMap { metadataResult =>
       metadataResult.error match {
         case Some(_) =>
@@ -151,7 +151,12 @@ class ServiceManager(
                               } else None
                             }
                             .toMap
-                          Some(qi.searchWithArrayFilter("Practitioner", params))
+                          Some(
+                            ParameterizedQuery(
+                              qi.searchWithArrayFilter("Practitioner", params),
+                              None
+                            )
+                          )
                         } else None
                       }
                     } catch {
@@ -194,21 +199,21 @@ class ServiceManager(
   }
 
   def allTablesInSchema: Seq[String] = {
-    qr.runQuery(QueryInput(qi.allTablesInSchema))
+    qr.runQuery(QueryInput(ParameterizedQuery(qi.allTablesInSchema, None)))
       .queryResults
       .map(row => row.result.getOrElse("tableName", ""))
       .filter(_ != "")
   }
 
   def tableColumns(tableName: String): Seq[String] = {
-    qr.runQuery(QueryInput(qi.tableSchema(tableName)))
+    qr.runQuery(QueryInput(ParameterizedQuery(qi.tableSchema(tableName), None)))
       .queryResults
       .map(row => row.result.getOrElse("column_name", ""))
       .filter(_ != "")
   }
 
   def tablesWithColumns(columns: Seq[String]): Seq[(String, String)] = {
-    qr.runQuery(QueryInput(qi.tablesWithColumns(columns), Uri("")))
+    qr.runQuery(QueryInput(ParameterizedQuery(qi.tablesWithColumns(columns), None), Uri("")))
       .queryResults
       .map(row =>
         (
@@ -222,7 +227,7 @@ class ServiceManager(
   def search(typeSeg: String)(implicit url: Uri): Future[FormattedOutput] =
     Future {
       val sql = qi.search(typeSeg, url.query().toMap)
-      val result = qr.runQuery(QueryInput(sql, url, url.toString()))
+      val result = qr.runQuery(QueryInput(ParameterizedQuery(sql, None), url, url.toString()))
       result.error match {
         case Some(x) => FormatManager.ErrorDefault(Seq(result))
         case None    =>

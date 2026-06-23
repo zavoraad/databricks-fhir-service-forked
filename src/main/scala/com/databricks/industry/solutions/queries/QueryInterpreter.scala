@@ -4,17 +4,29 @@ import com.databricks.client.jdbc.internal.fasterxml.jackson.databind.deser.Valu
 import com.databricks.industry.solutions.fhirapi.{Alias, BaseAlias}
 
 object QueryInterpreter {
-  def paramsToSelect(params: Map[String, String], resource: String): String = {
+  def paramsToSelect(
+      params: Map[String, String],
+      resource: String
+  ): ParameterizedQuery = {
     params.keySet match {
-      case x if x.isEmpty => "*, '" + resource + "' as resourceType"
+      case x if x.isEmpty =>
+        ParameterizedQuery(
+          "*, '" + "?" + "' as resourceType",
+          Some(Seq(resource))
+        )
       case x if x.contains("_elements") =>
-        params.getOrElse("_elements", "*") // _elements?id,birthDate,name.given
+        ???
+      // TODO params.getOrElse("_elements", "*") // _elements?id,birthDate,name.given
       case x if x.contains("_summary") =>
         params.getOrElse("_summary", "false") match {
-          case "false" => "*"
-          case _       => "*"
+          case "false" => ParameterizedQuery("*", None)
+          case _       => ParameterizedQuery("*", None)
         }
-      case _ => "*, '" + resource + "' as resourceType"
+      case _ =>
+        ParameterizedQuery(
+          "*, '" + "?" + "' as resourceType",
+          Some(Seq(resource))
+        )
     }
   }
 }
@@ -31,13 +43,24 @@ class QueryInterpreter(
       resource: String,
       id: String,
       params: Map[String, String]
-  ): String = {
-    "SELECT to_json(struct(" + QueryInterpreter.paramsToSelect(
-      params,
-      resource
-    ) + ")) AS " + resource + " FROM " +
-      catalog + "." + schema + "." + resource +
-      " WHERE " + sqlAlias.translate("id") + " = '" + id + "'".stripMargin
+  ): ParameterizedQuery = {
+    ParameterizedQuery("SELECT to_json(struct(", None) ++ QueryInterpreter
+      .paramsToSelect(
+        params,
+        resource
+      ) ++ ParameterizedQuery(
+      ")) AS " + "?" + " FROM " +
+        " ? " +
+        " WHERE " + " ? " + " = '" + "?" + "'".stripMargin,
+      Some(
+        Seq(
+          resource,
+          catalog + "." + schema + "." + resource,
+          sqlAlias.translate("id"),
+          id
+        )
+      )
+    )
   }
 
   // FHIR delete: hard-delete by id
@@ -45,9 +68,17 @@ class QueryInterpreter(
       resource: String,
       id: String,
       params: Map[String, String]
-  ): String = {
-    "DELETE FROM " + catalog + "." + schema + "." + resource +
-      " WHERE " + sqlAlias.translate("id") + " = '" + id + "'".stripMargin
+  ): ParameterizedQuery = {
+    ParameterizedQuery(
+      "DELETE FROM ? WHERE ? = ?",
+      Some(
+        Seq(
+          catalog + "." + schema + "." + resource,
+          sqlAlias.translate("id"),
+          id
+        )
+      )
+    )
   }
 
   /*
@@ -101,14 +132,17 @@ e.g. Condition?onset=23.May.2009 => SELECT ... FROM Conidtion Where onset = '23.
   def readEverythingForPatient(
       patientId: String,
       info: Seq[(String, String)]
-  ): Seq[String] = {
+  ): Seq[ParameterizedQuery] = {
     Seq(read("Patient", patientId, Map.empty[String, String])) ++
-      info.map((table, column) =>
-        search(
-          table,
-          Map(column -> { dollarEverything.translate("prefix") + patientId })
+      info.map { case (table, column) =>
+        ParameterizedQuery(
+          search(
+            table,
+            Map(column -> (dollarEverything.translate("prefix") + patientId))
+          ),
+          None
         )
-      )
+      }
   }
 
   /** Recursively converts a ujson.Value to a Databricks SQL expression.
